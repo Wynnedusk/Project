@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>💳 Secure Scholarship Transfer</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 4rem;
+      color: #e0e6ed;
+    }
+
+    .transfer-card {
+      background: #1e293b;
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .transfer-card h2 {
+      text-align: center;
+      color: var(--secondary);
+      margin-bottom: 2rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    input, button {
+      padding: 0.9rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      border: none;
+    }
+
+    input[type="number"] {
+      background: #f1f5f9;
+      color: #111;
+    }
+
+    button {
+      background: var(--success);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    button:hover {
+      background: #2e7d32;
+    }
+
+    .msg {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--light);
+    }
+  </style>
+</head>
+<body>
+  <div class="transfer-card">
+    <h2>🛡 Secure Transfer</h2>
+    <form action="secure-pay.php" method="POST"target="_blank">
+      <input type="number" name="money" min="1" required placeholder="Enter amount (€)">
+      <input type="hidden" name="csrf_token" id="csrf_token">
+      <button type="submit">💸 Submit Transfer</button>
+    </form>
+    <p class="msg">All transfers are protected by CSRF token validation.</p>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    //The page extracts the csrf_token from the cookie via JavaScript and fills it into the form:
+    document.getElementById("csrf_token").value = getCookie("csrf_token");
+  </script>
+</body>
+</html>

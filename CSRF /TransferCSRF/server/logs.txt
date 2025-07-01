@@ -1,0 +1,4 @@
+💣 POST-based CSRF Transfer: 1000 yuan to attacker@evil.com ｜Time: 2025-06-26 04:15:32
+💣 POST-based CSRF Transfer: 1000 yuan to attacker@evil.com ｜Time: 2025-06-26 04:15:44
+💣 POST-based CSRF Transfer: 1000 yuan to attacker@evil.com ｜Time: 2025-06-26 07:26:16
+💣 POST-based CSRF Transfer: 1000 yuan to attacker@evil.com ｜Time: 2025-06-26 07:26:16

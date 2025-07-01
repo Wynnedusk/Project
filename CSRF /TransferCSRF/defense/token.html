@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Malicious Transfer Attempt</title>
+</head>
+<body>
+  <h2>Loading scholarship verification, please wait...</h2>
+
+  <script>
+    // Simulates an attacker's forged POST request without adding a CSRF token
+    fetch("../defense/secure-pay.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      credentials: "include", //  A cookie is automatically attached (auth/user_token)
+      body: "money=1000"      //  Missing csrf_token triggers server defense
+    }).then(res => res.text()).then(msg => {
+      console.log("Server response:", msg); 
+    });
+  </script>
+
+  <p>If this page appears stuck, please do not close the window.</p>
+</body>
+</html>

