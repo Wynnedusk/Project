@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CSRF Defense Panel</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 30px; }
+    .container { display: flex; gap: 30px; justify-content: center; }
+    .panel {
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 600px;
+      height: 600px;
+    }
+    .panel h2 {
+      margin-top: 0;
+    }
+    iframe {
+      width: 100%;
+      height: 90%;
+      border: none;
+    }
+    .reload-btn {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛡️ CSRF Defense Demo (Token)</h1>
+
+  <div class="container">
+    <!-- Secure Blog with CSRF Token -->
+    <div class="panel">
+      <h2>🧑‍💻 Secure Blog (Defended)</h2>
+      <iframe id="secureFrame" src="secure_blog.php"></iframe>
+      <button class="reload-btn" onclick="document.getElementById('secureFrame').src='secure_blog.php'">
+        🔄 Reload Secure Blog
+      </button>
+    </div>
+
+    <!-- Attacker -->
+    <div class="panel">
+      <h2>💣 CSRF Attack Attempt</h2>
+      <iframe id="attackerFrame" src="attacker_defense.html"></iframe>
+      <button class="reload-btn" onclick="document.getElementById('attackerFrame').src='attacker_defense.html'">
+        🔄 Reload Attacker
+      </button>
+    </div>
+  </div>
+</body>
+</html>

