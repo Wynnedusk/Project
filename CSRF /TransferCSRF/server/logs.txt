@@ -1,0 +1,4 @@
+[2025-09-29 06:48:33] User Transfer: -1212 to 11@gg.com by student@demo.local
+POST-based CSRF Transfer: 1000 Euros to attacker@evil.com ｜Time: 2025-09-29 06:48:53
+POST-based CSRF Transfer: 1000 Euros to attacker@evil.com ｜Time: 2025-09-29 06:54:50
+[2025-09-29 06:55:13] User Transfer: -111 to 22@fg.com by student@demo.local

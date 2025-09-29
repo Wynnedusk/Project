@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web-based Cyber-attacks – studied, simulated and ordered</title>
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Minimal inline CSS for smooth scrolling & fixed header offset (do not touch other files) -->
+  <style>
+    html{scroll-behavior:smooth; scroll-padding-top:var(--header-h);}
+    [id]{scroll-margin-top:calc(var(--header-h) + 12px);}
+  </style>
+</head>
+<body>
+  <!-- Fixed Header -->
+  <header>
+    <div class="container header-wrap">
+      <div class="brand">
+        <div class="brand-logo">Cyber</div>
+        Web-based <span class="brand-highlight">Cyber-attacks</span>
+      </div>
+      <nav class="top" aria-label="Top Navigation">
+        <ul>
+          <li><a href="#top" class="active" data-anchor>Home</a></li>
+          <li><a href="#modules" data-anchor>Modules</a></li>
+          <li><a href="#about" data-anchor>About</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Welcome -->
+  <section id="top" class="welcome-hero" aria-label="Welcome">
+    <div class="welcome-inner">
+      <div class="welcome-copy">
+        <span class="welcome-badge">Welcome</span>
+        <h1 class="welcome-title">Learn, simulate and defend against web-based cyber attacks</h1>
+        <p class="welcome-sub">A safe, guided environment to understand real attack flows and their defenses.</p>
+        <a class="hero-cta" href="#modules" data-scroll>Enter Modules</a>
+      </div>
+      <div class="welcome-card">
+        <h4>What you'll do</h4>
+        <p>Toggle between attack and defense, open live demos in a modal stage, and see how Tokens and SameSite prevent CSRF.</p>
+      </div>
+    </div>
+    <div class="scroll-hint">Scroll or click the button to continue</div>
+  </section>
+
+  <!-- Core Functions -->
+  <section class="core" aria-label="Core Functions">
+    <div class="core-wrap">
+      <h2>Core Functions</h2>
+      <div class="feature-grid">
+        <div class="feat">
+          <h3>Secure Sandbox</h3>
+          <p>Perform simulations in an isolated environment.</p>
+        </div>
+        <div class="feat">
+          <h3>Attack Visualization</h3>
+          <p>See attack mechanisms in interactive diagrams.</p>
+        </div>
+        <div class="feat">
+          <h3>Defense Demo</h3>
+          <p>Learn effective defenses to prevent attacks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main layout -->
+  <div class="container layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Module Navigation">
+      <div class="cards" id="navCards">
+        <!-- CSRF Attack -->
+        <details class="card" open>
+          <summary class="hdr-csrf">
+            <span class="left"><span class="chev"></span>CSRF Attack</span>
+          </summary>
+          <div class="body">
+            <!-- POST -->
+            <details class="card" open>
+              <summary class="hdr-post">
+                <span class="left"><span class="chev"></span>POST CSRF</span>
+              </summary>
+              <div class="body">
+                <ul class="list">
+                  <li><a class="item" href="#post-blog" data-anchor>Blog CSRF</a></li>
+                  <li><a class="item" href="#post-money" data-anchor>Money Transfer CSRF</a></li>
+                </ul>
+              </div>
+            </details>
+            <!-- GET -->
+            <details class="card" open>
+              <summary class="hdr-get">
+                <span class="left"><span class="chev"></span>GET CSRF</span>
+              </summary>
+              <div class="body">
+                <ul class="list">
+                  <li><a class="item" href="#get-image" data-anchor>Image Attack</a></li>
+                  <li><a class="item" href="#get-href" data-anchor>Href Link Attack</a></li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </details>
+
+        <!-- Social engineering attack） -->
+        <details class="card" open>
+          <summary class="hdr-other">
+            <span class="left"><span class="chev"></span>Social engineering attack</span>
+          </summary>
+          <div class="body">
+            <ul class="list">
+              <li><a class="item" href="#phishing" data-anchor>Phishing</a></li>
+              <li><a class="item" href="#clickbait" data-anchor>Clickbait</a></li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main id="content">
+      <section class="hero" style="grid-column:1/-1">
+        <h2 style="text-align:center; margin:0 0 10px">Web-based Cyber-attacks – studied, simulated and ordered</h2>
+        <p class="muted" style="text-align:center">Learn, simulate and defend against common cyber attacks in a secure environment</p>
+      </section>
+
+      <section class="attack-list" id="modules">
+        <!-- CSRF · POST -->
+        <section class="attack-section" id="csrf-post" data-attack="CSRF Attack · POST Attack">
+          <div class="attack-header">
+            <h2>CSRF Attack · POST Attack</h2>
+            <span class="risk">High Risk</span>
+          </div>
+
+          <!-- POST · Blog -->
+          <div class="module-content split" id="post-blog">
+            <div class="lesson">
+              <h3>Blog CSRF — Lesson Introduction</h3>
+              <ul>
+                <li>Forged post submission via victim’s authenticated session.</li>
+                <li><strong>Attack Demo (Defense OFF)</strong> → no token, auto post by being attacked.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → CSRF Token + SameSite → success, defended.</li>
+              </ul>
+            </div>
+            <div class="right-panel" data-demo
+                 data-title="Blog CSRF Demo"
+                 data-on="blogCSRF/defense/defensepanel.php"
+                 data-off="blogCSRF/attack/attackpanel.html">
+              <div class="intro"><strong>POST CSRF · Blog</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.</div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox" class="defense-toggle"/>
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">POST</span><span class="chip">Token</span><span class="chip">SameSite</span></div>
+            </div>
+          </div>
+
+          <!-- POST · Money (live) -->
+          <div class="module-content split" id="post-money">
+            <div class="lesson">
+              <h3>Money Transfer CSRF — Lesson Introduction</h3>
+              <ul>
+                <li><strong>Attack Demo (Defense OFF)</strong> → After the victim clicks the phishing CTA, the right panel silently fires a POST money transfer; the left account log <strong>updates in real time</strong>.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → Uses a CSRF-token–protected transfer page; a missing or mismatched token is rejected, <strong>no money moves</strong>, and the status shows Protected.</li>
+              </ul>
+            </div>
+            <div
+              class="right-panel"
+              data-demo
+              data-title="Money Transfer CSRF Demo"
+              data-on="TransferCSRF/defense/T_defensepanel.html"
+              data-off="TransferCSRF/attack/T_attackpanel.html"
+            >
+              <div class="intro">
+                <strong>POST CSRF · Money</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.
+              </div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox" class="defense-toggle"/>
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">POST</span><span class="chip">Token</span><span class="chip">SameSite</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CSRF · GET -->
+        <section class="attack-section" id="csrf-get" data-attack="CSRF Attack · GET Attack">
+          <div class="attack-header">
+            <h2>CSRF Attack · GET Attack</h2>
+            <span class="risk">Medium Risk</span>
+          </div>
+
+          <!-- GET · Image -->
+          <div class="module-content split" id="get-image">
+            <div class="lesson">
+              <h3>IMG CSRF — Lesson Introduction</h3>
+              <ul>
+                <li>Triggers a forged GET request through an image tag on a malicious page.</li>
+                <li><strong>Attack Demo (Defense OFF)</strong> → request fires automatically when image loads.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → CSRF Token + SameSite block unintended request.</li>
+              </ul>
+            </div>
+            <div class="right-panel" data-demo
+                 data-title="GET CSRF · Image Demo"
+                 data-on="ImageCSRF/email_defense/Demail_panel.php"
+                 data-off="ImageCSRF/email_attack/email_panel.html">
+              <div class="intro"><strong>GET CSRF · Image</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.</div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox" class="defense-toggle"/>
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">GET</span><span class="chip">Image</span><span class="chip">Token</span></div>
+            </div>
+          </div>
+
+          <!-- GET · Href -->
+          <div class="module-content split" id="get-href">
+            <div class="lesson">
+              <h3>Href Link CSRF — Lesson Introduction</h3>
+              <ul>
+                <li>Victim clicks a crafted link which performs a state-changing GET request.</li>
+                <li><strong>Attack Demo (Defense OFF)</strong> → click redirects and triggers unintended action.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → POST-only requirement + CSRF Token validation blocks the GET request.</li>
+              </ul>
+            </div>
+            <div class="right-panel" data-demo
+                 data-title="GET CSRF · Href"
+                 data-on="HrefCSRF/Hrefdefense/D_panel.php"
+                 data-off="HrefCSRF/Hrefattack/H_panel.html">
+              <div class="intro"><strong>GET CSRF · Href</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.</div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox" class="defense-toggle"/>
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">GET</span><span class="chip">Href</span><span class="chip">Token</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Other group -->
+        <section class="attack-section" id="other" data-attack="Other Attack Types">
+          <div class="attack-header">
+            <h2>Social engineering attack</h2>
+            <span class="risk">Mixed</span>
+          </div>
+
+          <!-- Phishing -->
+          <div class="module-content split" id="phishing">
+            <div class="lesson">
+              <h3>Phishing — Lesson Introduction</h3>
+              <ul>
+                <li>Simulates a phishing email that lures the victim to a fake login page to steal credentials.</li>
+                <li><strong>Attack Demo (Defense OFF)</strong> → clicks the CTA in the email, reaches a convincing fake login.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → SPF/DKIM/DMARC warnings shown; interstitial warning page; form submission blocked by JavaScript.</li>
+              </ul>
+            </div>
+            <div class="right-panel" data-demo
+                 data-title="Phishing Attack Demo"
+                 data-on="Phishing/PhishDefense/D_panel.html"
+                 data-off="Phishing/PhishAttack/P_panel.html">
+              <div class="intro"><strong>Phishing</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.</div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox">
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">Email</span><span class="chip">Fake Login</span><span class="chip">Tips</span></div>
+            </div>
+          </div>
+
+          <!-- Clickbait -->
+          <div class="module-content split" id="clickbait">
+            <div class="lesson">
+              <h3>Clickbait — Lesson Introduction</h3>
+              <ul>
+                <li>Demonstrates deceptive UI patterns that trick users into unintended clicks or actions.</li>
+                <li><strong>Attack Demo (Defense OFF)</strong> → Leads the victim to click an ad/CTA that opens a tracker or unwanted page.</li>
+                <li><strong>Defense Demo (Defense ON)</strong> → Domain whitelist checking; interstitial warnings for untrusted sites; sandbox mode with restricted capabilities.</li>
+              </ul>
+            </div>
+            <div class="right-panel" data-demo
+                 data-title="Clickbait Attack Demo"
+                 data-on="Clickbait/CDefense/D_panel.html"
+                 data-off="Clickbait/CAttack/C_panel.html">
+              <div class="intro"><strong>Clickbait</strong> — Click on the open demo below to start learning, and toggle defence mode for comparison if needed.</div>
+              <div class="row">
+                <label class="toggle">
+                  <input type="checkbox" disabled/>
+                  Defense <span class="state-pill off state">OFF</span>
+                </label>
+                <button class="btn open-modal">Open Demo</button>
+              </div>
+              <div class="chips"><span class="chip">Installation</span><span class="chip">Email</span></div>
+            </div>
+          </div>
+
+          </div>
+        </section>
+      </section>
+
+      <section class="lesson" id="about" style="margin-top:18px">
+        <h3>About</h3>
+        <p class="muted">UCC · MSc Interactive Media · Supervisor: Dr. Frank Boehme.</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-top">
+        <div class="modal-title" id="modalTitle">Demo</div>
+        <div class="modal-ctrls">
+          <label class="toggle" title="Toggle defense in this demo">
+            <input type="checkbox" id="modalToggle"/>
+            Defense <span class="state-pill off" id="modalState">OFF</span>
+          </label>
+          <button class="fullscreen" id="fullscreenModal" aria-label="Fullscreen">Fullscreen</button>
+          <button class="close" id="closeModal" aria-label="Close">Close</button>
+        </div>
+      </div>
+      <iframe class="stage" id="modalFrame" title="Demo Stage"></iframe>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2025 Web-based Cyber-attacks · UCC · MSc Interactive Media</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ===== Anchor highlighting without blocking native navigation ===== */
+    function markTopNavActive() {
+      const h = location.hash || '#top';
+      document.querySelectorAll('nav.top a[data-anchor]').forEach(a => {
+        const on = a.getAttribute('href') === h;
+        a.classList.toggle('active', on);
+        a.setAttribute('aria-current', on ? 'page' : null);
+      });
+    }
+    function markSidebarActive() {
+      const h = (location.hash || '#top').slice(1);
+      const sideLinks = document.querySelectorAll('.item[data-anchor]');
+      sideLinks.forEach(a => {
+        const on = a.getAttribute('href').slice(1) === h;
+        a.classList.toggle('active', on);
+        if (on) {
+          let d = a.closest('details');
+          while (d) { d.open = true; d = d.parentElement?.closest('details'); }
+          a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      });
+    }
+    window.addEventListener('hashchange', () => { markTopNavActive(); markSidebarActive(); });
+    window.addEventListener('DOMContentLoaded', () => { markTopNavActive(); markSidebarActive(); });
+
+    /* ===== Modal logic (unchanged) ===== */
+    const overlay=document.getElementById('overlay');
+    const modalFrame=document.getElementById('modalFrame');
+    const modalTitle=document.getElementById('modalTitle');
+    const modalToggle=document.getElementById('modalToggle');
+    const modalState=document.getElementById('modalState');
+    const closeModalBtn=document.getElementById('closeModal');
+    const fullscreenBtn=document.getElementById('fullscreenModal');
+    let currentDemo=null;
+
+    function openOverlay(){ overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+    function closeOverlay(){ overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true'); document.body.style.overflow=''; modalFrame.src='about:blank'; modalFrame.removeAttribute('srcdoc'); currentDemo=null; }
+
+    document.querySelectorAll('[data-demo]').forEach(block=>{
+      const disabled = block.dataset.disabled==='true';
+      const toggle = block.querySelector('.defense-toggle');
+      const state  = block.querySelector('.state');
+      const btnOpen= block.querySelector('.open-modal');
+      const urlOn  = block.dataset.on;
+      const urlOff = block.dataset.off;
+      const title  = block.dataset.title || (block.closest('.attack-section')?.dataset.attack || 'Demo');
+
+      function reflectLocal(){
+        if(!state) return;
+        const on = toggle && toggle.checked;
+        state.textContent = on ? 'ON' : 'OFF';
+        state.classList.toggle('on', on);
+        state.classList.toggle('off', !on);
+      }
+      if(toggle) toggle.addEventListener('input', reflectLocal);
+      reflectLocal();
+
+      if(btnOpen){
+        btnOpen.addEventListener('click', ()=>{
+          modalTitle.textContent = title;
+
+          if(disabled){
+            modalToggle.checked=false;
+            modalState.textContent='OFF';
+            modalState.classList.remove('on'); modalState.classList.add('off');
+            const html = `
+              <html><body style="margin:0;background:#0f1d42;color:#eaf0ff;
+              font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+              display:flex;align-items:center;justify-content:center;height:100%;">
+              <div style="text-align:center;max-width:720px;padding:24px">
+                <h2 style="margin:0 0 10px">Demo planned</h2>
+                <p style="color:#b7c7ff">This demonstration is under construction. The final version will show
+                an attack flow (OFF) and a defense flow (ON) based on CSRF Token + SameSite.</p>
+              </div></body></html>`;
+            modalFrame.removeAttribute('src');
+            modalFrame.srcdoc = html;
+            openOverlay();
+            return;
+          }
+
+          const on = toggle && toggle.checked;
+          modalToggle.checked = !!on;
+          modalState.textContent = on ? 'ON' : 'OFF';
+          modalState.classList.toggle('on', !!on);
+          modalState.classList.toggle('off', !on);
+          modalFrame.removeAttribute('srcdoc');
+          modalFrame.src = ((on ? urlOn : urlOff) || 'about:blank') + (on||urlOff?('?t='+Date.now()):'');
+          currentDemo = {toggle, urlOn, urlOff};
+          openOverlay();
+        });
+      }
+    });
+
+    modalToggle.addEventListener('input', ()=>{
+      const on = modalToggle.checked;
+      modalState.textContent = on ? 'ON' : 'OFF';
+      modalState.classList.toggle('on', on);
+      modalState.classList.toggle('off', !on);
+      if(currentDemo){
+        if(currentDemo.toggle){ currentDemo.toggle.checked = on; currentDemo.toggle.dispatchEvent(new Event('input',{bubbles:true})); }
+        modalFrame.removeAttribute('srcdoc');
+        modalFrame.src = (on ? currentDemo.urlOn : currentDemo.urlOff) + '?t=' + Date.now();
+      }
+    });
+
+    // Fullscreen button
+    fullscreenBtn.addEventListener('click', () => {
+      const el = modalFrame;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    });
+
+    closeModalBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', e=>{ if(e.target===overlay) closeOverlay(); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape' && overlay.classList.contains('open')) closeOverlay(); });
+  
+  </script>
+</body>
+</html>

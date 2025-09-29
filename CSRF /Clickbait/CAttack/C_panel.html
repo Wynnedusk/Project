@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clickbait Attack — Bait → Lander Chain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --blue:#2563eb; --blue-d:#1d4ed8;
+      --bg:#f4f6fa; --card:#fff; --border:#e5e7eb; --muted:#64748b; --ink:#0f172a;
+      --info-bg:#ecfeff; --info-bd:#a5f3fc; --info-tx:#0e7490;
+    }
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:22px}
+    h1{margin:0 0 12px;text-align:center}
+
+    .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin:10px 0 16px}
+    .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+    .badge{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#fff}
+    .status{font-weight:700}
+    /* New: change text color only (no border/background changes) */
+    .s-warn{color:#eab308;}     /* Opening bait (yellow) */
+    .s-bad{color:#b91c1c;}      /* User lured (red) */
+
+    .hint{font-size:13px;color:var(--muted);text-align:center;margin:0 0 10px}
+
+    .container{display:flex;gap:20px;max-width:1200px;margin:0 auto;align-items:stretch}
+    .panel{
+      border:1px solid var(--border);
+      background:var(--card);
+      border-radius:12px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      height:600px;
+      overflow:hidden;
+    }
+    .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);background:#f3f4f6}
+    .frameWrap{flex:1;min-height:0;overflow:hidden}
+    iframe{width:100%;height:520px;border:0;border-radius:0 0 12px 12px;background:#fff}
+
+    .narr{margin:8px 12px 0;border:1px solid var(--info-bd);background:var(--info-bg);color:var(--info-tx);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.45}
+
+    /* Global details (right-panel accordions keep original height) */
+    details{
+      margin:10px 12px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      overflow:visible;
+      flex-shrink:0;
+    }
+    details>summary{padding:8px 12px;cursor:pointer;font-weight:600}
+    details .box{
+      padding:8px 12px;
+      border-top:1px solid var(--border);
+      background:#fafafa;
+      height:260px;           /* This fixed height causes empty space in the teaching area; overridden below only for that section */
+      max-height:none;
+      overflow:auto;
+      font-size:14px;
+    }
+    pre{margin:0;line-height:1.45}
+
+    /* Bottom old notice (kept, hidden later) */
+    .notice-bottom{
+      max-width:1200px; margin:14px auto 0; padding:12px 14px;
+      background:#f8fafc; border:1px solid var(--border); border-radius:10px; color:var(--ink);
+    }
+    .notice-bottom .title{font-weight:700;margin-bottom:6px}
+    .notice-bottom .muted{font-size:13px;color:#64748b}
+    .notice-bottom .list{margin:6px 0 0 18px}
+
+    /* Inline note in right panel (kept) */
+    .note-inline{
+      margin:8px 12px 0; border:1px solid var(--border); background:#f8fafc;
+      border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.5; color:var(--ink);
+    }
+    .note-inline .small{color:var(--muted); font-size:12.5px; margin-top:2px}
+    .note-inline ul{margin:6px 0 0 18px}
+
+    /* NEW: teaching area (match your other cases) */
+    .teach{max-width:1200px;margin:20px auto 0;display:flex;flex-direction:column;gap:14px}
+    .teachbox{
+      border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden;
+    }
+    .teachbox>summary{
+      padding:12px 14px; list-style:none; font-weight:700; cursor:pointer; background:#f8fafc;
+      border-bottom:1px solid var(--border)
+    }
+    .teachbox>summary::-webkit-details-marker{display:none}
+    .teachbox[open]>summary{background:#eef2ff}
+    .teachbox .box{padding:12px 14px}
+    pre.codeblock{
+      background:#0f172a; color:#e5e7eb; border-radius:8px; padding:10px; overflow:auto;
+      margin:0;
+    }
+    code.inline{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      background:#f1f5f9; color:#0f172a; border-radius:4px; padding:0 6px;
+    }
+    .muted{color:var(--muted); font-size:13px}
+
+    /* ===== Compact spacing & height fix JUST for the teaching section ===== */
+    .teach{ margin-top:10px; gap:8px; }
+    #teachingSection .teachbox{ margin:0; }
+    #teachingSection .teachbox + .teachbox{ margin-top:8px; }
+    #teachingSection .teachbox > summary{ padding:10px 12px; }
+    #teachingSection .teachbox .box{        /* Key override: remove fixed height only here */
+      padding:10px 12px;
+      height:auto;            /* ← Back to auto height */
+      max-height:none;
+      overflow:visible;       /* No inner scrolling; no blank area */
+    }
+    #teachingSection .teachbox .box > *:first-child{ margin-top:0; }
+    #teachingSection .teachbox .box > *:last-child{  margin-bottom:0; }
+    #teachingSection .teachbox .box p{ margin:8px 0; }
+    #teachingSection .teachbox .box ul,
+    #teachingSection .teachbox .box ol{ margin:8px 0 0 20px; }
+    #teachingSection pre.codeblock{ margin:0; }
+  </style>
+
+  <!-- Intro.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <h1>Clickbait Attack — Bait → Lander Chain</h1>
+
+  <div class="topbar">
+    <button class="btn" id="btnReset">Reset Demo</button>
+    <button class="btn btn-primary" id="btnGuide">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="status">Idle</span></span>
+  </div>
+
+  <p class="hint">
+    Left: victim feed with a teaser. Right: bait/lander. Clicking the teaser lures the user and routes them to either a phishing or ads/download page.
+  </p>
+
+  <div class="container">
+    <!-- Left panel: victim feed -->
+    <div class="panel" id="leftPanel">
+      <h2>Victim Feed</h2>
+      <div id="narrLeft" class="narr">Waiting for interaction...</div>
+      <div class="frameWrap"><iframe id="feed" src="C_feed.php" title="Victim Feed"></iframe></div>
+
+    
+    </div>
+
+    <!-- Right panel: bait/lander -->
+    <div class="panel" id="rightPanel">
+      <h2>Bait / Lander</h2>
+
+      <!-- kept inline summary -->
+      <div class="note-inline" id="teachNoteInline" data-intro="Summary: the bait routes to phishing (email collection) or ads/download (harmless demo file).">
+        <strong>Teaching note · Clickbait outcomes</strong>
+        <div class="small">Randomly routes (e.g., 60% Ads/Download, 40% Phishing).</div>
+        <ul>
+          <li><b>Phishing:</b> submit email → logged for teaching (no real mails).</li>
+          <li><b>Ads/Download:</b> prompts a download → harmless demo file.</li>
+        </ul>
+      </div>
+
+      <div id="narrRight" class="narr">Waiting for bait to open... Click “Read now” in the left feed.</div>
+
+      <!-- Initial state is blank; bait loads only after OPEN_BAIT -->
+      <div class="frameWrap"><iframe id="pane" src="about:blank" title="Bait / Lander"></iframe></div>
+
+      <!-- MERGED: Attacker explanation + key code -->
+    
+    </div>
+  </div>
+
+  <!-- Teaching area -->
+  <div class="teach" id="teachingSection">
+    <details class="teachbox" open>
+      <summary>What just happened?</summary>
+      <div class="box">
+        <p>
+          A teaser in the left feed opened a <b>bait</b> page on the right. After clicking
+          <b>“Claim Now”</b>, the system routed you to one of two <b>landers</b>:
+        </p>
+        <ul style="margin:8px 0 0 20px">
+          <li><b>Phishing lander:</b> asks for an email and silently posts it to the backend for an information theft.</li>
+          <li><b>Ads/Download lander:</b> pushes a download (harmless blob zip in this demo) to mimic real-world malicious file delivery.</li>
+        </ul>
+        <p class="muted" style="margin-top:10px">
+          The parent panel listens to messages from child iframes and updates the narration/status as the chain progresses.
+        </p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>Why did the attack succeed?</summary>
+      <div class="box">
+        <ol style="margin:0 0 0 20px">
+          <li><b>Social engineering:</b> persuasive teaser reduce caution; the user voluntarily continues.</li>
+          <li><b>No domain/route checks (in attack demo):</b> the feed does not gate external links (no allow-list or warning step).</li>
+          <li><b>Low-friction data capture:</b> the phishing lander directly accepts an email and posts it to a server endpoint.</li>
+          <li><b>Seamless branching:</b> randomized routing keeps engagement high and masks intent (phish vs. download).</li>
+          <li><b>User-initiated flow looks “legit”:</b> navigation occurs in the user’s context, so browsers don’t block it by default.</li>
+        </ol>
+        <p class="muted" style="margin-top:10px">
+          Bottom line: the user is lured into self-submitting data or running an installer, with no protective checks on the path.
+        </p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>View attacker snippets</summary>
+      <div class="box">
+<pre class="codeblock"><code>// C_bait.html — lure and branch
+btn.addEventListener('click', () =&gt; {
+  window.parent.postMessage({ type:'CLICKBAIT_FIRED' }, '*');
+  const target = Math.random() &lt; 0.6 ? 'C_lander_ads.html' : 'C_lander_phish.html';
+  location.href = target;
+});
+
+// C_lander_phish.html — email collection (teaching only)
+await fetch('C_collect.php', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: 'email=' + encodeURIComponent(val)
+});
+window.parent.postMessage({ type:'CLICKBAIT_CHAIN', value:'phish' }, '*');
+
+// C_lander_ads.html — fake download (harmless)
+const blob = new Blob(['This is a demo payload'], { type: 'text/plain' });
+const a = document.createElement('a');
+a.href = URL.createObjectURL(blob);
+a.download = 'player_setup.zip';
+a.click();</code></pre>
+        <ul class="muted" style="margin-top:10px; margin-left:18px;">
+          <li><b>Bait</b> signals “user lured”, then routes to a lander.</li>
+          <li><b>Phishing</b> lander posts the email to the backend (no real emails sent).</li>
+          <li><b>Ads/Download</b> lander triggers a harmless file download for classroom use.</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <!-- Old bottom teaching note (kept but hidden) -->
+  <section class="notice-bottom" id="oldTeachingNote" role="note" aria-live="polite" style="display:none">
+    <div class="title">Teaching note · Clickbait outcomes</div>
+    <p class="muted">
+      This clickbait demo randomly routes to one of two branches (default: 60% Ads/Download, 40% Phishing).
+    </p>
+    <ul class="list">
+      <li><b>Phishing:</b> asks you to submit an email to the backend for teaching logs only; no real emails are sent.</li>
+      <li><b>Ads/Download:</b> prompts to “download exam materials”; the file is a harmless text zip for classroom use.</li>
+    </ul>
+  </section>
+
+  <script>
+  (function(){
+    const st = document.getElementById('statusText');
+    const feed = document.getElementById('feed');
+    const pane = document.getElementById('pane');
+    const btnReset = document.getElementById('btnReset');
+    const btnGuide = document.getElementById('btnGuide');
+    const narrLeft  = document.getElementById('narrLeft');
+    const narrRight = document.getElementById('narrRight');
+
+    let lastRoute = null;
+
+    /* New: status setter (only toggles text and optional color class) */
+    function setStatus(text, cls){
+  st.textContent = text;
+  st.className = 'status';
+  if(cls) st.classList.add(cls);
+}
+
+window.addEventListener('message', (e)=>{
+  const d = e.data || {};
+
+  if (d.type === 'OPEN_BAIT'){
+    setStatus('Opening bait','s-warn');
+    narrLeft.textContent  = 'Victim clicked a teaser in the feed.';
+    narrRight.textContent = 'Bait page opened; next step is the lure.';
+    pane.src = 'C_bait.html';
+    return;
+  }
+
+  if (d.type === 'CLICKBAIT_CHAIN'){
+    setStatus('User lured by clickbait','s-bad');
+    if (d.value==='phish'){
+      narrRight.textContent = 'Voucher page requests email and posts it to backend (teaching log only).';
+      narrLeft.textContent  = 'User data can now be harvested for spam or scams.';
+    }
+    return;
+  }
+
+  if (d.type === 'ATTACK_ACTION' && d.action==='ads_download'){
+    setStatus('User lured by clickbait','s-bad');
+    narrRight.textContent = 'A fake installer download is offered; the zip is a harmless teaching file.';
+    narrLeft.textContent  = 'Running unknown installers is dangerous in real scenarios.';
+    return;
+  }
+});
+
+
+    // Reset state
+    btnReset.addEventListener('click', ()=>{
+      setStatus('Idle');  // clear color class
+      lastRoute = null;
+      narrLeft.textContent  = 'Waiting for interaction...';
+      narrRight.textContent = 'Waiting for bait to open... Click “Read now” in the left feed.';
+      feed.src = 'C_feed.php?rnd=' + Date.now();
+      pane.src = 'about:blank';
+    });
+
+    // Guide: last step highlights the teaching section (unchanged)
+    function startGuide(){
+      if (typeof introJs!=='function'){ alert('Intro library not loaded.'); return; }
+      introJs().setOptions({
+        nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+        exitOnOverlayClick:false, scrollToElement:true,
+        steps:[
+          { element:'#leftPanel',  intro:'Step 1: In the left feed click "Read now" to open the bait on the right.' },
+          { element:'#rightPanel', intro:'Step 2: On the bait page click "Claim Now" — status stays “Opening bait” until you actually submit or download.' },
+          { element:'#rightPanel', intro:'Step 3: After submit or download, the status turns red: “User lured by clickbait”.' },
+          { element:'#teachingSection', intro:'Step 4: Review this teaching area — same style as other cases, summarizing the chain and attacker code.' }
+        ]
+      }).start();
+    }
+    btnGuide.addEventListener('click', startGuide);
+  })();
+  </script>
+</body>
+</html>

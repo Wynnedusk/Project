@@ -2,159 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CSRF Login Simulation</title>
-  <link rel="stylesheet" href="../../../style.css">
+  <title>User Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: linear-gradient(rgba(79, 195, 247, 0.2));
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding-top: 4rem;
-      color: #e0e6ed;
-    }
-
-    .login-step-title {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 30px;
+      background-color: white;
+      color: #333;
       text-align: center;
-      margin-bottom: 2rem;
     }
-
-    .login-step-title h1 {
-      font-size: 2rem;
-      color: var(--secondary);
-      margin-bottom: 0.5rem;
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.5rem;
     }
-
-    .login-step-title p {
-      color: #94a3b8;
-      font-size: 1rem;
-    }
-
-    .login-step-circle {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--success);
-      color: white;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1rem;
-      font-size: 1rem;
-    }
-
-    .login-card-dark {
-      background: #ffffff;
-      padding: 3rem;
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-      max-width: 800px;
-      width: 100%;
-    }
-
-    .login-card-dark h2 {
-      color: var(--secondary);
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-
-    .login-card-dark p {
-      color: #2f435e;
-      text-align: center;
-      font-size: 0.95rem;
-      margin-bottom: 2rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      color: #325580;
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    .form-group input {
-      background: #334155;
-      border: none;
-      border-radius: 8px;
-      width: 100%;
-      padding: 0.5rem 1rem;
-      color: #f1f5f9;
-      font-size: 1rem;
-      transition: var(--transition);
-    }
-
-    .form-group input:focus {
-      outline: 2px solid var(--secondary);
-      background: #3b4b63;
-    }
-
-    .login-btn {
-      background: var(--secondary);
-      color: var(--dark);
-      font-weight: bold;
-      border: none;
-      padding: 0.9rem;
-      width: 100%;
-      font-size: 1rem;
+    .login-container {
+      max-width: 400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 40px;
       border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .form-group label {
+      font-weight: 600;
+      color: #333;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      transition: var(--transition);
+      font-size: 16px;
     }
-
-    .login-btn:hover {
-      background: #29b4ec;
+    .btn:hover {
+      background-color: #45a049;
     }
-
-    .icon-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .icon-label svg {
-      width: 1rem;
-      height: 1rem;
-      fill: var(--secondary);
+    .login-footer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #888;
     }
   </style>
 </head>
 <body>
 
-  <div class="login-step-title">
-    <h1>🛡️ CSRF Attack Demo</h1>
-    <p>Simulating how users may be tricked into unauthorized fund transfers</p>
-  </div>
-
-  <div class="login-step-circle">1</div>
-
-  <div class="login-card-dark">
-    <h2>User Login</h2>
-    <p>Log in with your email and password to proceed to your account</p>
-
+  <div class="login-container">
+    <h1>Login</h1>
     <form action="../server/login.php" method="POST">
       <div class="form-group">
-        <label class="icon-label" for="email">
-          📧 Email Address
-        </label>
+        <label for="email">Email Address</label>
         <input type="email" id="email" name="email" placeholder="user@example.com" required />
       </div>
-
       <div class="form-group">
-        <label class="icon-label" for="password">
-          🔒 Password
-        </label>
+        <label for="password">Password</label>
         <input type="password" id="password" name="password" placeholder="********" required />
       </div>
-
-      <button type="submit" class="login-btn">➡️ Log In</button>
+      <button type="submit" class="btn">Log In</button>
     </form>
+    <div class="login-footer">
+      <p>Log in with your email and password to proceed to your account.</p>
+    </div>
   </div>
 
 </body>

@@ -8,6 +8,7 @@ if (!isset($_SESSION['loggedIn'])) {
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
 }
+//Set up CSRF token defense
 if (!isset($_SESSION['global_posts'])) {
     $_SESSION['global_posts'] = [];
 }

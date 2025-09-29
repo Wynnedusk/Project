@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Protected Pane (sandboxed)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--border:#e5e7eb;--muted:#64748b;--ink:#0f172a;--okbg:#ecfeff;--okbd:#a5f3fc}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#fff}
+    .wrap{padding:18px}
+    .banner{border:1px solid var(--okbd);background:var(--okbg);border-radius:10px;padding:10px 12px;color:var(--ink);margin-bottom:14px}
+    .card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px}
+    code.url{display:inline-block;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:4px 6px}
+    ul{margin:8px 0 0 20px;color:var(--muted)}
+    .preview{border:1px dashed var(--border);border-radius:10px;height:420px;margin-top:10px;overflow:hidden}
+    .note{color:var(--muted);font-size:13px;margin-top:6px}
+    iframe{width:100%;height:100%;border:0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Informative banner: this pane runs with minimal privileges -->
+    <div class="banner">Destination opened with restricted privileges (scripts, downloads, cross-origin blocked).</div>
+
+    <!-- Target URL display (read-only info box) -->
+    <div class="card">
+      <div style="margin-bottom:6px;"><b>Destination:</b> <code id="u" class="url">(no url)</code></div>
+      <div class="note">This pane shows the target address only. Risky capabilities are blocked in this sandbox.</div>
+    </div>
+
+    <!-- What is restricted in this sandbox + embedded preview frame -->
+    <div class="card">
+      <b>What is blocked here</b>
+      <ul>
+        <li>Scripts and plug-ins (no script execution)</li>
+        <li>Form posts & top-level navigation without user activation</li>
+        <li>Downloads and automatic file saves</li>
+        <li>Same-origin only — cross-origin content may fail to render</li>
+      </ul>
+      <div class="preview" id="pv"></div>
+    </div>
+  </div>
+
+  <script>
+    const q = new URLSearchParams(location.search);
+    const url = q.get('u') || '';
+    // Reflect the destination URL in the info box (or "(no url)" when absent)
+    document.getElementById('u').textContent = url || '(no url)';
+
+    // Try to preview inside a sandboxed <iframe>; cross-origin/XFO/CSP may show blank — that's expected.
+    if (url) {
+      const ifr = document.createElement('iframe');
+      // Do NOT grant allow-scripts / allow-downloads — keep it strictly restricted
+      ifr.setAttribute('sandbox','');
+      ifr.src = url;
+      document.getElementById('pv').appendChild(ifr);
+    }
+  </script>
+</body>
+</html>

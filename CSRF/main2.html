@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web-based Cyber-attacks – studied, simulated and ordered</title>
+  <style>
+    :root {
+      --bg:#0b1020;
+      --ink:#ffffff;
+      --muted:#a9b4d0;
+      --brand:#6aa1ff;
+      --card:#0f152b;
+      --card-strong:#0c1230;
+      --panel:#152047;
+      --panel-2:#0f1d42;
+      --border:#2a3966;
+      --radius:16px;
+      --shadow:0 10px 32px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    a{color:var(--brand);text-decoration:none}
+    .muted{color:var(--muted)}
+    header{background:#0b1020;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--border)}
+    .container{width:min(1100px,92vw);margin:0 auto}
+    .header-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:20px}
+    .brand-logo{background:#3ec1ff;color:#000;border-radius:10px;padding:6px 12px}
+    nav ul{display:flex;gap:16px;list-style:none;padding:0;margin:0}
+    nav a{padding:8px 12px;border-radius:10px}
+    nav a:hover{background:rgba(134,168,255,.12)}
+    .hero{padding:40px 0;text-align:center}
+    .hero h2{font-size:clamp(22px,3vw,32px);margin:0 0 10px}
+    .hero p{margin:0;color:var(--muted)}
+    .features{background:#e6f3ff;color:#000;padding:40px 0}
+    .features .section-header{text-align:center;margin-bottom:24px}
+    .features-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    .feature-card{background:#fff;padding:20px;border-radius:var(--radius);box-shadow:var(--shadow);text-align:center}
+
+    /* 模块样式 */
+    .attack-list{display:grid;gap:28px;padding:42px 0}
+    .attack-section{
+      background:linear-gradient(180deg,var(--card-strong),var(--card));
+      border:2px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .attack-header{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:16px 18px;
+      background:rgba(255,255,255,.03);
+      border-bottom:1px solid var(--border);
+    }
+    .attack-header h2{margin:0;font-size:18px}
+    .risk{
+      padding:4px 10px;border-radius:999px;font-size:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+    }
+    .module-content{padding:18px}
+    .lesson{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:14px;
+      box-shadow:0 6px 20px rgba(0,0,0,.35);
+    }
+    .lesson h3{margin:0 0 8px}
+    .lesson ul{margin:6px 0 0 18px}
+    .demo-block{
+      background:var(--panel-2);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+    }
+    .demo-controls{
+      display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap
+    }
+    .toggle{
+      display:flex;align-items:center;gap:8px;
+      padding:6px 12px;border-radius:999px;
+      background:#0d1734;
+      border:1px solid var(--border);
+    }
+    .toggle input{accent-color:var(--brand)}
+ 
+.frame-wrap{
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;     
+}
+
+ 
+iframe.demo-frame{
+  width:100%;
+  height:460px;
+  border:0;
+  background:#fff;   
+}
+    footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);text-align:center}
+  </style>
+</head>
+<body>
+<header>
+  <div class="container header-wrap">
+    <div class="brand"><div class="brand-logo">Cyber</div> Web-based <span style="color: var(--brand)">Cyber-attacks</span></div>
+    <nav>
+      <ul>
+        <li><a href="#top">Home</a></li>
+        <li><a href="#attacks">Modules</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="container">
+    <h2>Web-based Cyber-attacks – studied, simulated and ordered</h2>
+    <p class="muted">Learn, simulate and defend against common cyber attacks in a secure environment</p>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <div class="section-header"><h2>Core Functions</h2></div>
+    <div class="features-grid">
+      <div class="feature-card"><h3>Secure Sandbox</h3><p>Perform simulations in an isolated environment.</p></div>
+      <div class="feature-card"><h3>Attack Visualization</h3><p>See attack mechanisms in interactive diagrams.</p></div>
+      <div class="feature-card"><h3>Defense Demo</h3><p>Learn effective defenses to prevent attacks.</p></div>
+    </div>
+  </div>
+</section>
+
+<main class="container" id="attacks">
+  <div class="attack-list">
+
+    <!-- CSRF -->
+    <section class="attack-section" id="csrf">
+      <div class="attack-header"><h2>CSRF</h2><span class="risk">High</span></div>
+      <div class="module-content">
+        <div class="lesson">
+          <h3>Lesson</h3>
+          <ul>
+            <li>Forged requests from authenticated browsers.</li>
+            <li>Mitigation: SameSite cookies and CSRF tokens.</li>
+          </ul>
+        </div>
+        <div class="demo-block" data-demo data-on="TransferCSRF/defense/secure-home.html" data-off="TransferCSRF/server/login.html">
+          <div class="demo-controls">
+            <label class="toggle"><input type="checkbox" class="defense-toggle"> Defense <span class="state">OFF</span></label>
+            <span class="muted">OFF → attack · ON → defense</span>
+          </div>
+          <div class="frame-wrap"><iframe class="demo-frame" src="TransferCSRF/server/login.html"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AJAX -->
+    <section class="attack-section" id="ajax">
+      <div class="attack-header"><h2>AJAX / CORS</h2><span class="risk">Medium</span></div>
+      <div class="module-content">
+        <div class="lesson">
+          <h3>Lesson</h3>
+          <ul>
+            <li>Misconfigured CORS leaks data across origins.</li>
+            <li>Avoid wildcard * with credentials.</li>
+          </ul>
+        </div>
+        <div class="demo-block" data-demo data-on="blogCSRF/defense/defensepanel.html" data-off="blogCSRF/attack/attackpanel.html">
+          <div class="demo-controls">
+            <label class="toggle"><input type="checkbox" class="defense-toggle"> Defense <span class="state">OFF</span></label>
+            <span class="muted">OFF → attack · ON → defense</span>
+          </div>
+          <div class="frame-wrap"><iframe class="demo-frame" src="blogCSRF/attack/attackpanel.html"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHISHING placeholder -->
+    <section class="attack-section" id="phishing">
+      <div class="attack-header"><h2>Phishing</h2><span class="risk">Very High</span></div>
+      <div class="module-content">
+        <div class="lesson"><h3>Lesson</h3><ul><li>Deceptive pages trick users into submitting secrets.</li></ul></div>
+        <div class="demo-block" data-demo data-disabled="true">
+          <div class="demo-controls"><label class="toggle"><input type="checkbox" disabled> Defense <span class="state">OFF</span></label><span class="muted">In progress</span></div>
+          <div class="frame-wrap"><iframe class="demo-frame" srcdoc="<h3 style='color:white;padding:20px'>Phishing – coming soon</h3>"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLICKBAIT placeholder -->
+    <section class="attack-section" id="clickbait">
+      <div class="attack-header"><h2>Clickbait</h2><span class="risk">Medium</span></div>
+      <div class="module-content">
+        <div class="lesson"><h3>Lesson</h3><ul><li>Misleading UI/content drives unintended clicks.</li></ul></div>
+        <div class="demo-block" data-demo data-disabled="true">
+          <div class="demo-controls"><label class="toggle"><input type="checkbox" disabled> Defense <span class="state">OFF</span></label><span class="muted">In progress</span></div>
+          <div class="frame-wrap"><iframe class="demo-frame" srcdoc="<h3 style='color:white;padding:20px'>Clickbait – coming soon</h3>"></iframe></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<section class="container" id="about" style="padding-bottom:40px">
+  <div class="lesson"><h3>About</h3><p class="muted">UCC · MSc Interactive Media · Supervisor: Dr. Frank Boehme.</p></div>
+</section>
+
+<footer><div class="container"><p>© 2025 Web-based Cyber-attacks · UCC · MSc Interactive Media</p></div></footer>
+
+<script>
+  document.querySelectorAll('[data-demo]').forEach(block => {
+    if (block.dataset.disabled === 'true') return;
+    const toggle = block.querySelector('.defense-toggle');
+    const state  = block.querySelector('.state');
+    const frame  = block.querySelector('iframe.demo-frame');
+    const urlOn  = block.dataset.on;
+    const urlOff = block.dataset.off;
+    function updateFrame(){
+      const defenseOn = toggle.checked;
+      state.textContent = defenseOn ? 'ON' : 'OFF';
+      frame.src = (defenseOn ? urlOn : urlOff) + '?t=' + Date.now();
+    }
+    toggle.addEventListener('input', updateFrame);
+    updateFrame();
+  });
+</script>
+</body>
+</html>

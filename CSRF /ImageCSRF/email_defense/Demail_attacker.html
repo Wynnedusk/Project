@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Travel Gallery (Attempt)</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:24px 18px;line-height:1.45}
+    .hint{position:sticky;top:0;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;border-radius:8px;padding:10px;margin-bottom:14px}
+    .photo{margin:18px 0;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fafafa}
+    img{max-width:100%;border-radius:8px;display:block}
+    .muted{color:#666;font-size:13px;margin-top:6px}
+    details{border:1px solid #e5e7eb;border-radius:10px;margin-top:14px}
+    details>summary{cursor:pointer;padding:8px 10px;font-weight:600}
+    details .box{padding:10px;border-top:1px dashed #eee}
+    pre{margin:8px 0;background:#0f172a;color:#e5e7eb;border-radius:8px;padding:10px;overflow:auto}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Courier New",monospace}
+  </style>
+</head>
+<body>
+  <div class="hint">This page tries to attack by loading a cross-site image. The defense should block state changes.</div>
+
+  <div class="photo">
+    <img src="../../assets/ucc1.jpg" alt=" 1">
+    <div class="muted">1 — campus</div>
+  </div>
+
+  <div class="photo">
+    <img src="../../assets/library.jpg" alt=" 2">
+    <div class="muted">2 — library</div>
+  </div>
+
+  <!-- Attempted malicious image block (becomes active when visible) -->
+  <div class="photo" id="evilBlock">
+    <img id="teaser" src="../../assets/image.png" alt="teaser (safe preview)" loading="lazy">
+    <div class="muted">3 — teaser (attempt)</div>
+  </div>
+
+  <!-- Hidden container for injected payload image -->
+  <div id="payloadHolder" hidden></div>
+
+  <script>
+    const holder = document.getElementById('payloadHolder');
+    const block  = document.getElementById('evilBlock');
+
+    let fired = false;
+
+    // Function to trigger a GET request disguised as an image
+    const fireAttack = () => {
+      const img = new Image();
+      img.width = 1;
+      img.height = 1;
+      img.style.opacity = '0.001';
+      // Target endpoint: attempts to change email via GET (should be blocked by defense)
+      img.src = './Demail_image.php?new=attacker%40evil.com&v=' + Date.now();
+
+      img.onload = () => {
+        // Even if server responds with 200, notify parent — in defense demo we expect rejection
+        try { window.parent?.postMessage({ type: 'DEFENSE_RESULT', value: 'loaded' }, '*'); } catch (e) {}
+      };
+      img.onerror = () => {
+        // Expected case: request blocked by defense → notify parent
+        try { window.parent?.postMessage({ type: 'DEFENSE_RESULT', value: 'blocked' }, '*'); } catch (e) {}
+      };
+
+      holder.hidden = false;
+      holder.appendChild(img);
+    };
+
+    // Fire attack when the malicious block enters 60% of viewport
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting && !fired) {
+          fired = true;
+          setTimeout(fireAttack, 800); // simulate lazy-load delay
+        }
+      });
+    }, { threshold: 0.6 });
+
+    io.observe(block);
+
+    // If parent notifies "login done", retry attack if block was visible
+    window.addEventListener('message', (e) => {
+      if (e?.data?.type === 'LOGIN_DONE' && !fired) {
+        fired = true; 
+        setTimeout(fireAttack, 200);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,76 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Attacker Simulation (Token Bypass)</title>
+  <meta charset="UTF-8" />
+  <title>💣 Attacker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 40px; }
-    button { padding: 12px 24px; font-size: 16px; margin-top: 20px; }
-    p { color: gray; font-size: 14px; }
-    details { margin-top: 30px; text-align: left; max-width: 600px; margin-inline: auto; }
-    pre { background: #f9f9f9; padding: 10px; border: 1px solid #ccc; overflow-x: auto; }
+    :root{
+      --bg:#f6f7f9; --card:#fff; --bd:#e5e7eb; --txt:#111; --muted:#6b7280;
+      --brand:#ef4444; --brand-soft:#fee2e2;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:26px 14px; background:var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:var(--txt);
+      display:flex; justify-content:center;
+    }
+    .wrap{width:min(920px,100%)}
+
+    h1{margin:0 0 14px 0; font-size:28px}
+
+    .post{
+      background:var(--card); border:1px solid var(--bd); border-radius:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04); overflow:hidden;
+    }
+    .head{display:flex; gap:12px; padding:18px}
+    .avatar{width:54px;height:54px;border-radius:999px;background:#e5e7eb;flex:0 0 54px}
+    .meta{display:flex;flex-direction:column;justify-content:center}
+    .name{font-weight:700}
+    .time{color:var(--muted);font-size:13px}
+
+    .body{padding:0 18px 18px}
+    .text{line-height:1.55;margin:0 0 12px 0}
+    .photo{width:100%; aspect-ratio: 16 / 9; border-radius:12px; overflow:hidden; background:#e5e7eb;}
+    .photo img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .actions{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--bd)}
+    .like-pill{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--bd);
+      background:#fff;padding:10px 14px;border-radius:999px;cursor:pointer;user-select:none;
+      transition:transform .05s ease, background .15s ease, border-color .15s ease, color .15s ease;
+      font-weight:600;
+    }
+    .like-pill:active{transform:translateY(1px)}
+    .like-pill.liked{background:var(--brand-soft);border-color:transparent;color:var(--brand)}
+    .heart{font-size:18px;line-height:1}
+    .hint{margin-left:auto;color:var(--muted);font-size:13px}
+
+    .toast{
+      position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+      background:#111;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;
+      opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+      box-shadow:0 8px 24px rgba(0,0,0,.18);
+    }
+    .toast.show{opacity:1;transform:translate(-50%,-6px)}
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
 </head>
 <body>
+  <div class="wrap">
+    <article class="post" aria-label="Post from @wanderer">
+      <header class="head">
+        <div class="avatar" aria-hidden="true"></div>
+        <div class="meta">
+          <div class="name">@wanderer</div>
+          <div class="time">just now · Cork</div>
+        </div>
+      </header>
 
-  <h2>Attacker Panel</h2>
-  <p>This page tries to post to <code>secure_blog.php</code> without a CSRF token.</p>
-  <button id="attackButton" onclick="launchAttack()" data-intro="Click here to simulate an attack. The post will not include a CSRF token.">Launch Attack</button>
+      <div class="body">
+        <p class="text">What a day! Dropping a pic here 📸</p>
+        <div class="photo">
+          <img src="../../assets/ucc1.jpg" alt="UCC Quadrangle courtyard" />
+        </div>
+      </div>
 
-  <!-- 教学块：查看攻击代码 -->
-  <details>
-    <summary><strong>🔍 View attacker code</strong></summary>
-    <pre><code>fetch('secure_blog.php', {
-  method: 'POST',
-  credentials: 'include',
-  body: new FormData()  // No CSRF token included
-});</code></pre>
-    <p style="font-size: 14px; color: #555;">
-      This JavaScript code sends a POST request directly to <code>secure_blog.php</code>.<br>
-      Because no valid <code>csrf_token</code> is included in the request body, the server will reject the request with <code>HTTP 403 Forbidden</code>.
-    </p>
-  </details>
+      <div class="actions">
+        <button id="likeBtn" class="like-pill" aria-pressed="false">
+          <span class="heart">❤️</span><span>Like</span><span id="likeCount">128</span>
+        </button>
+        <!-- Optional: to show a hint text, uncomment the next line and pair with the JS hint logic -->
+        <!-- <span id="hintText" class="hint">Tap to like</span> -->
+      </div>
+    </article>
 
-  <!-- 攻击逻辑 -->
+    <div id="toast" class="toast" role="status" aria-live="polite">Liked</div>
+  </div>
+
   <script>
-    function launchAttack() {
-      const formData = new FormData();
-      formData.append('content', 'CSRF attack attempt (no token)');
+    const btn   = document.getElementById('likeBtn');
+    const count = document.getElementById('likeCount');
+    const toast = document.getElementById('toast');
+    const hint  = document.getElementById('hintText'); // May not exist; null-checked below
 
-      fetch('secure_blog.php', {
-        method: 'POST',
-        credentials: 'include',  // Send cookies to simulate same-origin
-        body: formData
-      })
-      .then(res => {
-        if (!res.ok) {
-          alert("Attack blocked! (No valid CSRF token)");
-        } else {
-          alert("⚠️ Unexpected success – check secure_blog.php logic.");
-        }
+    let liked = false;
+    let sending = false;
 
-        // Reload the secure blog iframe if available
-        const secureFrame = parent.document.getElementById('secureFrame');
-        if (secureFrame) {
-          secureFrame.contentWindow.location.reload();
-        }
-      })
-      .catch(err => {
-        console.error("Request failed:", err);
-        alert("Error sending attack request.");
-      });
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1700);
     }
 
-    // Optional: Auto highlight the attack button on load
-    window.addEventListener("DOMContentLoaded", function () {
-      if (!sessionStorage.getItem("attackStepShown")) {
-        introJs().start();
-        sessionStorage.setItem("attackStepShown", "true");
+    // Check whether the LEFT secure_blog panel is logged in (by inspecting parent iframe text)
+    function isSecureLoggedIn(){
+      try{
+        const frame = parent?.document?.getElementById('secureFrame');
+        const doc   = frame?.contentDocument || frame?.contentWindow?.document;
+        const text  = (doc?.body?.innerText || '').toLowerCase();
+
+        if (/status:\s*not\s+logged\s+in/.test(text)) return false;
+        if (/status:\s*logged\s+in/.test(text))      return true;
+        if (!/not\s+logged\s+in/.test(text) && /\blogged\s+in\b/.test(text)) return true;
+        return false;
+      }catch(e){
+        return false;
       }
+    }
+
+    // Launch a CSRF POST WITHOUT token and notify the parent panel about the outcome
+    function launchAttack(){
+      // Tell parent panel an attack attempt is in flight (turn status red first)
+      try { parent.postMessage({ type:'ATTACK_ATTEMPT' }, '*'); } catch(e){}
+
+      const fd = new FormData();
+      fd.append('content', 'CSRF attack attempt (no token)');
+
+      return fetch('secure_blog.php', {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+      })
+      .then(res => {
+        // Refresh the left defense iframe if present (to reflect the blocked attempt)
+        const frame = parent?.document?.getElementById('secureFrame');
+        if (frame) frame.contentWindow.location.reload();
+
+        if (!res.ok) {
+          // 403 / not logged in / no token → report "blocked" so parent shows Protected
+          try { parent.postMessage({ type:'DEFENSE_BLOCKED', status: res.status }, '*'); } catch(e){}
+          console.warn('Attack blocked (expected). Status:', res.status);
+        }
+      })
+      .catch(err => console.error('Attack request failed:', err));
+    }
+
+    function toggleLikeUI(){
+      liked = !liked;
+      btn.classList.toggle('liked', liked);
+      btn.setAttribute('aria-pressed', String(liked));
+      const base = parseInt(count.textContent || '0', 10);
+      count.textContent = liked ? base + 1 : Math.max(0, base - 1);
+      showToast(liked ? 'Liked' : 'Unliked');
+    }
+
+    function refreshHint(){
+      if (!hint) return; // No hint element → skip
+      hint.textContent = isSecureLoggedIn() ? 'Tap to like' : 'Login on the left first';
+    }
+    refreshHint();
+    setInterval(refreshHint, 900);
+
+    // On Like click: if not logged in, just notify; if logged in, flip UI and attempt the CSRF (which should be blocked)
+    btn.addEventListener('click', async () => {
+      if (sending) return;
+
+      if (!isSecureLoggedIn()){
+        showToast('Please login first');
+        return;
+      }
+
+      sending = true;
+      toggleLikeUI();
+      try { await launchAttack(); }
+      finally { sending = false; }
     });
   </script>
-
 </body>
 </html>

@@ -2,32 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>💳 Secure Scholarship Transfer</title>
-  <link rel="stylesheet" href="../style.css" />
+  <title>Secure Scholarship Transfer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding-top: 4rem;
-      color: #e0e6ed;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 30px;
+      background-color: white;
+      color: #333;
+      text-align: center;
     }
 
     .transfer-card {
-      background: #1e293b;
-      padding: 2.5rem 2rem;
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
       max-width: 500px;
-      width: 100%;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .transfer-card h2 {
-      text-align: center;
-      color: var(--secondary);
-      margin-bottom: 2rem;
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 1.5rem;
     }
 
     form {
@@ -36,57 +35,125 @@
       gap: 1.2rem;
     }
 
+    label { text-align: left; font-weight: 600; color: #333; }
+
     input, button {
-      padding: 0.9rem;
+      padding: 12px;
       border-radius: 10px;
       font-size: 1rem;
-      border: none;
+      border: 1px solid #ccc;
     }
 
-    input[type="number"] {
-      background: #f1f5f9;
-      color: #111;
-    }
+    input[type="number"] { background-color: #f1f5f9; color: #111; }
 
     button {
-      background: var(--success);
+      background-color: #4CAF50;
       color: white;
       font-weight: bold;
       cursor: pointer;
-      transition: var(--transition);
+      transition: background-color 0.3s;
     }
+    button:hover { background-color: #45a049; }
 
-    button:hover {
-      background: #2e7d32;
-    }
-
-    .msg {
-      margin-top: 1.2rem;
-      text-align: center;
-      font-size: 0.95rem;
-      color: var(--light);
-    }
+    .msg { margin-top: 1.2rem; font-size: 0.95rem; color: #888; }
+    .err{ color:#b91c1c; font-size:13px; margin:6px 0 0; text-align:left; }
   </style>
 </head>
 <body>
+
   <div class="transfer-card">
-    <h2>🛡 Secure Transfer</h2>
-    <form action="secure-pay.php" method="POST"target="_blank">
-      <input type="number" name="money" min="1" required placeholder="Enter amount (€)">
+    <h2>Secure Transfer</h2>
+
+    <form action="secure-pay.php" method="POST" id="secureTransferForm" autocomplete="off">
+      <label for="recipient">Recipient (email)</label>
+      <!-- Changed: keep appearance, but add autocapitalize/inputmode; we validate with regex -->
+      <input id="recipient" name="recipient" type="text"
+             required placeholder="recipient@example.com"
+             autocomplete="email" autocapitalize="off" inputmode="email" />
+      <p class="err" id="recErr" hidden>Provide a valid recipient email.</p>
+
+      <label for="money">Amount (€)</label>
+      <input id="money" type="number" name="money" min="1" required placeholder="Enter amount (€)">
+
+      <!-- CSRF token hidden field -->
       <input type="hidden" name="csrf_token" id="csrf_token">
-      <button type="submit">💸 Submit Transfer</button>
+
+      <button type="submit">Submit Transfer</button>
     </form>
+
     <p class="msg">All transfers are protected by CSRF token validation.</p>
   </div>
 
   <script>
+    // Read cookie (original implementation)
     function getCookie(name) {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop().split(';').shift();
     }
-    //The page extracts the csrf_token from the cookie via JavaScript and fills it into the form:
-    document.getElementById("csrf_token").value = getCookie("csrf_token");
+    document.getElementById("csrf_token").value = getCookie("csrf_token") || "";
+
+    // Custom email validation (replaces browser typeMismatch) to avoid edge cases
+    (function(){
+      const form   = document.getElementById('secureTransferForm');
+      const rec    = document.getElementById('recipient');
+      const money  = document.getElementById('money');
+      const recErr = document.getElementById('recErr');
+
+      // Simple regex: must contain @ and dot, no spaces
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      function showRecErr(show){ if(recErr) recErr.hidden = !show; }
+
+      function emailValid(v){
+        v = (v || '').trim();
+        return EMAIL_RE.test(v);
+      }
+
+      // On input/blur: trim spaces and validate inline
+      function validateInline(){
+        const v = rec.value.trim();
+        rec.value = v;
+        if (emailValid(v)) {
+          rec.setCustomValidity('');
+          showRecErr(false);
+          return true;
+        } else {
+          rec.setCustomValidity('Provide a valid recipient email.');
+          // Do not show popup immediately, leave to submit/reportValidity
+          return false;
+        }
+      }
+
+      rec.addEventListener('input', validateInline);
+      rec.addEventListener('blur',  validateInline);
+
+      money.addEventListener('input', () => {
+        if ((parseInt(money.value, 10) || 0) > 0) money.setCustomValidity('');
+      });
+
+      form.addEventListener('submit', (e) => {
+        // Ensure trimming and validate before submission
+        rec.value = rec.value.trim();
+        const okEmail = validateInline();
+        const okAmt   = (parseInt(money.value, 10) || 0) > 0;
+
+        if (!okEmail || !okAmt) {
+          e.preventDefault();
+          if (!okEmail) {
+            try { rec.reportValidity(); } catch(_) {}
+            showRecErr(true);
+          }
+          if (!okAmt) {
+            money.setCustomValidity('Enter a positive amount.');
+            try { money.reportValidity(); } catch(_) {}
+          } else {
+            money.setCustomValidity('');
+          }
+        }
+      });
+    })();
   </script>
+
 </body>
 </html>

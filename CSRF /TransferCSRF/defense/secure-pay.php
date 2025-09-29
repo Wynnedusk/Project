@@ -1,38 +1,61 @@
 <?php
+// secure-pay.php (defense backend)
 session_start();
 
-// Step 1: Check if the user is logged in (via session)
+// 1) User must be logged in
 if (!isset($_SESSION['email'])) {
-    die("Access denied: not logged in.");
+    http_response_code(403);
+    exit("Access denied: not logged in.");
 }
 
-// Step 2: Handle only POST requests with valid CSRF token
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verify that the CSRF token matches the one stored in the session
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die("Invalid CSRF token.");
-    }
-
-    // Step 3: Get the transfer amount and validate it
-    $amount = intval($_POST['money']);
-    if ($amount <= 0) die("Invalid amount");
-
-    // Step 4: Read the current balance
-    $balanceFile = "../server/balance.json";
-    $balanceData = json_decode(file_get_contents($balanceFile), true);
-    $balance = $balanceData["balance"] ?? 0;
-
-    // Step 5: Subtract the amount and save new balance
-    $balance -= $amount;
-    $balanceData["balance"] = $balance;
-    file_put_contents($balanceFile, json_encode($balanceData, JSON_PRETTY_PRINT));
-
-    // Step 6: Record the transaction as a valid user action
-    $log = "[" . date("Y-m-d H:i:s") . "] ✅ User Transfer: -" . $amount . " by " . $_SESSION['email'] . PHP_EOL;
-    file_put_contents("../server/logs.txt", $log, FILE_APPEND);
-
-    // Step 7: Redirect back to the main dashboard
-    header("Location: ../server/home.html");
-    exit();
+// 2) Only accept POST and verify CSRF token
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    exit("Nothing changed");
 }
-?>
+$posted_token  = $_POST['csrf_token'] ?? '';
+$session_token = $_SESSION['csrf_token'] ?? '';
+if ($posted_token === '' || $session_token === '' || !hash_equals((string)$session_token, (string)$posted_token)) {
+    http_response_code(403);
+    exit("Invalid CSRF token.");
+}
+
+// 3) Require recipient parameter
+$recipient_raw = trim((string)($_POST['recipient'] ?? ''));
+if ($recipient_raw === '') {
+    http_response_code(400);
+    exit("Missing recipient.");
+}
+
+// 4) Validate recipient: accept email-like strings (for demo purposes)
+//    If using account IDs instead of emails, adjust this validation logic accordingly.
+if (!filter_var($recipient_raw, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    exit("Invalid recipient format.");
+}
+
+// 5) Get amount
+$amount = intval($_POST['money'] ?? 0);
+if ($amount <= 0) {
+    http_response_code(400);
+    exit("Invalid amount");
+}
+
+// 6) Read and update balance
+$balanceFile = "../server/balance.json";
+$balanceData = json_decode(file_get_contents($balanceFile), true);
+$balance     = $balanceData["balance"] ?? 0;
+if ($balance < $amount) {
+    exit("Insufficient balance, transfer failed");
+}
+$balance -= $amount;
+$balanceData["balance"] = $balance;
+file_put_contents($balanceFile, json_encode($balanceData, JSON_PRETTY_PRINT));
+
+// 7) Log transfer including recipient (sanitize for logs)
+$recipient_safe = htmlspecialchars($recipient_raw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$log = "[" . date("Y-m-d H:i:s") . "] User Transfer: -{$amount} to {$recipient_safe} by " . ($_SESSION['email'] ?? 'unknown') . PHP_EOL;
+file_put_contents("../server/logs.txt", $log, FILE_APPEND);
+
+// 8) Redirect back to dashboard/home
+header("Location: ../server/home.html");
+exit();

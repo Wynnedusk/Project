@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Check these photos! (Secure Demo)</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:24px 18px;line-height:1.45}
+    .box{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+    a.big{display:inline-block;margin-top:10px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;text-decoration:none;color:#111;background:#f8fafc}
+    .muted{color:#64748b;font-size:13px}
+    .hint{position:sticky;top:0;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;border-radius:8px;padding:10px;margin-bottom:14px}
+    details{border:1px solid #e5e7eb;border-radius:10px;margin-top:14px;overflow:hidden}
+    details>summary{cursor:pointer;padding:8px 10px;font-weight:600;background:#f8fafc}
+    details>summary::-webkit-details-marker{display:none}
+    details .box2{padding:10px;border-top:1px dashed #eee}
+    pre{margin:8px 0;background:#0f172a;color:#e5e7eb;border-radius:8px;padding:10px;overflow:auto}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  </style>
+</head>
+<body>
+  <div class="hint">This page tries to attack by a cross-site <b>GET</b> hyperlink. The defense should block any state change.</div>
+
+  <div class="box">
+    <h2>Beautiful Campus Photos</h2>
+    <p class="muted">Click to view more…</p>
+    <p>
+      <a class="big"
+         href="D_follower.php?user=attacker"
+         target="_self"
+         onclick="return notifyAndGo(this.href)">View more photos</a>
+    </p>
+  </div>
+
+
+
+  <script>
+    function notifyAndGo(url){
+      try { window.parent.postMessage({ type:'ATTACK_LINK_CLICKED' }, '*'); } catch(e){}
+      setTimeout(function(){ window.location.href = url; }, 0);
+      return false;
+    }
+    // 如果后端返回 302 到 ?blocked=1（或你改成 403 页 postMessage），父页会收到 ATTACK_RESULT
+    (function(){
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('blocked') === '1') {
+        try { window.parent.postMessage({ type:'ATTACK_RESULT', result:'blocked' }, '*'); } catch(e){}
+        const p = document.createElement('p');
+        p.textContent = 'Blocked by CSRF defenses (GET rejected).';
+        p.style.cssText = 'color:#a91100;margin-top:8px';
+        document.body.appendChild(p);
+      }
+    })();
+  </script>
+</body>
+</html>

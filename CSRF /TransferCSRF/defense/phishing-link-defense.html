@@ -18,9 +18,7 @@
       margin: auto;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .card h2 {
-      color: #005bbb;
-    }
+    .card h2 { color: #005bbb; }
     .fake-sender {
       font-size: 0.9em;
       color: #999;
@@ -36,9 +34,7 @@
       font-weight: bold;
       border-radius: 6px;
     }
-    .cta:hover {
-      background-color: #e23c3c;
-    }
+    .cta:hover { background-color: #e23c3c; }
   </style>
 </head>
 <body>
@@ -48,7 +44,8 @@
     <p>Due to unfilled slots from the first round, the UCC Scholarship Committee is now conducting a second round of confirmations. Please <strong>complete your application within 24 hours</strong>.</p>
     <p>Click the button below to access the identity verification system:</p>
 
-    <a class="cta" href="../defense/token.html" target="_blank">
+    <!-- Only allow navigation to token.html after checks; keep target=attackerFrame for the right-side iframe in the panel -->
+    <a id="cta" class="cta" href="../defense/token.html" target="attackerFrame">
       Click here to verify your eligibility
     </a>
 
@@ -56,5 +53,41 @@
       This is an automated message. Please do not reply. For inquiries, contact the university's scholarship office.
     </p>
   </div>
+
+  <script>
+    // 1) Auth check: login.php sets auth=user_token after login
+    function hasAuth() {
+      return /(?:^|;\s*)auth=user_token(?:;|$)/.test(document.cookie);
+    }
+
+    // 2) Verify the left victim iframe is on home.html (not login.html)
+    function leftIsHome() {
+      try {
+        const f = parent?.document?.getElementById('victimFrame');
+        if (!f) return false;
+
+        // Prefer reading real location (same-origin)
+        const loc = f.contentWindow?.location;
+        if (loc && loc.pathname) {
+          return /\/home\.html$/.test(loc.pathname);
+        }
+
+        // Fallback: infer from iframe src
+        if (f.src) {
+          const u = new URL(f.src, location.href);
+          return /\/home\.html$/.test(u.pathname);
+        }
+      } catch (e) { /* If reading fails, treat as not satisfied */ }
+      return false;
+    }
+
+    document.getElementById('cta').addEventListener('click', function(e){
+      if (!(hasAuth() && leftIsHome())) {
+        e.preventDefault();
+        alert('Please log in on the left FIRST and make sure it shows the Home page, then click the red button again.');
+      }
+      // If checks pass, proceed to token.html in the right attackerFrame; token.html then requests secure-pay.php
+    });
+  </script>
 </body>
 </html>

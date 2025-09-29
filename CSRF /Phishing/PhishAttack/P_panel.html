@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phishing Attack — Credential Capture & Reuse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --blue:#2563eb; --blue-d:#1d4ed8;
+      --bg:#f4f6fa; --card:#fff; --border:#e5e7eb; --muted:#64748b; --ink:#0f172a;
+      --info-bg:#ecfeff; --info-bd:#a5f3fc; --info-tx:#0e7490;
+    }
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:22px}
+    h1{margin:0 0 12px;text-align:center}
+
+    .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin:10px 0 16px}
+    .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+    .badge{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#fff}
+    .status{font-weight:700}
+    .hint{font-size:13px;color:var(--muted);text-align:center;margin:0 0 10px}
+
+    .container{display:flex;gap:20px;max-width:1200px;margin:0 auto;align-items:stretch}
+    .panel{
+      border:1px solid var(--border);
+      background:var(--card);
+      border-radius:12px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      height:600px;
+      overflow:hidden;
+    }
+    .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);background:#f3f4f6}
+    .frameWrap{flex:1;min-height:0;overflow:hidden}
+    .panel iframe{width:100%;height:520px;border:0;border-radius:0 0 12px 12px;background:#fff}
+
+    /* Teaching (below the panels) */
+    .teach{max-width:1200px;margin:16px auto 0}
+    .teach details{margin:10px 0;border:1px solid var(--border);border-radius:8px;background:#fff}
+    .teach details>summary{padding:10px 12px;cursor:pointer;font-weight:600;list-style:none}
+    .teach details>summary::-webkit-details-marker{display:none}
+    .teach .box{padding:10px 12px;border-top:1px solid var(--border);background:#fafafa;
+      max-height:220px;overflow:auto;font-size:14px;line-height:1.55;color:var(--ink)}
+    .teach pre{margin:0;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+    .teach .muted{color:#64748b}
+    .teach .tag{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#fff;margin-right:6px;font-size:12px}
+
+    /* Log & backend table */
+    .log{border:1px solid var(--border);border-radius:10px;background:#fff;max-width:1200px;margin:14px auto 0;overflow:hidden}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead{background:#f3f4f6}
+    th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+    .evt-cap{color:#b91c1c;font-weight:700}
+    .evt-reuse{color:#0f766e;font-weight:700}
+    .evt-ok{color:#16a34a;font-weight:700}
+    .evt-bad{color:#b91c1c;font-weight:700}
+
+    .credsbox{max-width:1200px;margin:14px auto 0;border:1px solid var(--border);background:#fff;border-radius:10px;overflow:hidden}
+    .credshead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:#f8fafc}
+    .credsctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .btn.btn-mini{padding:4px 8px;border:1px solid var(--border);background:#f8fafc;border-radius:6px;cursor:pointer}
+    .credstablewrap{max-height:260px;overflow:auto}
+    .credstable{width:100%;border-collapse:collapse;font-size:13px}
+    .credstable thead{background:#f3f4f6}
+    .credstable th,.credstable td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+    .tr-new{background:#f0fdf4}
+    .warn{color:#b45309}
+  </style>
+
+  <!-- Intro.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <h1>Phishing Attack — Credential Capture & Reuse</h1>
+
+  <div class="topbar">
+    <button class="btn" onclick="doReset()">Reset Demo</button>
+    <button class="btn btn-primary" onclick="startGuide()">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="status">Not phished yet</span></span>
+  </div>
+
+  <p class="hint">Left: the real site. Right: phishing email leading to a fake login. Anything you enter on the right is captured and (in this demo) reused on the left.</p>
+
+  <div class="container">
+    <!-- LEFT: Victim / Real site -->
+    <div class="panel" id="victimPanel">
+      <h2>Victim (Real Site)</h2>
+      <div class="frameWrap">
+        <iframe id="victimFrame" src="../Secure/login.php" title="Victim"></iframe>
+      </div>
+    </div>
+
+    <!-- RIGHT: Phishing flow -->
+    <div class="panel" id="attackerPanel">
+      <h2>Attacker (Phishing Email → Fake Login)</h2>
+      <div class="frameWrap">
+        <iframe id="attackerFrame" src="P_attacker.html" title="Attacker"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Event Log -->
+  <div class="log" id="logBox">
+    <table>
+      <thead><tr><th style="width:120px">Time</th><th style="width:200px">Event</th><th>Detail</th></tr></thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Attacker Backend — Captured Credentials -->
+  <div class="credsbox" id="credsBox">
+    <div class="credshead">
+      <div><b>Attacker Backend — Captured Credentials</b> <span class="muted">(phished.jsonl)</span></div>
+      <div class="credsctrl">
+        <label><input type="checkbox" id="cbOnlyLatest" checked> Only latest</label>
+        <label><input type="checkbox" id="cbMaskEmail" checked> Mask email</label>
+        <label><input type="checkbox" id="cbShowPwd"> Show password</label>
+        <span class="muted warn">Teaching demo — never submit real credentials.</span>
+        <button class="btn btn-mini" id="btnReloadCreds">Reload</button>
+      </div>
+    </div>
+    <div class="credstablewrap" id="credsWrap">
+      <table class="credstable">
+        <thead>
+          <tr>
+            <th style="width:158px;">Time (ISO)</th>
+            <th>Email</th>
+            <th style="width:110px;">Source</th>
+            <th style="width:140px;">IP</th>
+            <th>UA (short)</th>
+            <th style="width:150px;">Password</th>
+          </tr>
+        </thead>
+        <tbody id="credsBody">
+          <tr><td colspan="6" class="muted">No records yet — enter demo data on the fake login.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<!-- Teaching area -->
+<div class="teach" id="teachArea" aria-label="Phishing walkthrough">
+  <details>
+    <summary>What just happened?</summary>
+    <div class="box">
+      <p>
+        <span class="tag">1) Lure</span><span class="tag">2) Fake login</span>
+        <span class="tag">3) Capture</span><span class="tag">4) (Demo) notify</span>
+      </p>
+      <ul>
+        <li><b>Email lure:</b> the attacker displays a spoofed “security” email linking to a look-alike login page.</li>
+        <li><b>Capture:</b> when the victim submits the fake form, the spoofed site logs the submitted email/password to the attacker backend.</li>
+        <li><b>Notify:</b> the collector then notifies the teaching panel so the captured credentials appear in the attacker backend view.</li>
+      </ul>
+      <p class="muted">This is a teaching demonstration: in real incidents attackers typically attempt reuse or resale of credentials immediately or shortly afterwards, often from different IP addresses or devices.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why the capture succeeded? (vulnerable code, teaching-only)</summary>
+    <div class="box">
+      <ul>
+        <li><b>No origin / CSRF checks:</b> the collector accepts POST requests from any source in this demo.</li>
+        <li><b>No validation / rate limiting:</b> raw credentials are appended to a log without sanitization or throttling.</li>
+        <li><b>Immediate notification:</b> after writing the log, the collector notifies the parent panel via <code>postMessage</code> so the attacker UI updates.</li>
+      </ul>
+
+      <pre><code>&lt;!-- P_fakelogin.php --&gt;
+&lt;form method="POST" action="P_collect.php"&gt;…&lt;/form&gt;
+
+&lt;!-- P_collect.php (demo only) --&gt;
+&lt;?php
+file_put_contents('../Data/phished.jsonl',
+  json_encode($_POST + ['ts'=>gmdate('c'),'track'=>'phishing']).PHP_EOL,
+  FILE_APPEND
+);
+echo "&lt;script&gt;parent.postMessage({type:'CREDENTIALS_CAPTURED'},'*')&lt;/script&gt;";
+?&gt;</code></pre>
+
+      <p class="muted">(The snippet above is intentionally vulnerable so the capture flow is visible in class.)</p>
+      <p class="muted" style="font-size:12px">Source: the collector writes to <code>../Data/phished.jsonl</code> and notifies the panel (demo files in the project). :contentReference[oaicite:1]{index=1}</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How reuse is shown (teaching-only)</summary>
+    <div class="box">
+      <p>
+        For demonstration, the attacker panel can surface the latest captured record; instructors may then show a manual or scripted “reuse” step (outside this vulnerable collector) to illustrate how credentials could be attempted against the real site. This portion is for demonstration purposes only and is not an automated real-world attack flow.
+      </p>
+      <p class="muted">Note: do not implement cross-origin message acceptance for authentication in production environments; this example exists only to visualize the attack chain during teaching.</p>
+    </div>
+  </details>
+</div>
+
+
+<script>
+const statusEl  = document.getElementById('statusText');
+const logBody   = document.getElementById('logBody');
+const victim    = document.getElementById('victimFrame');
+const attacker  = document.getElementById('attackerFrame');
+let reuseTimer  = null;
+
+function setStatus(txt){ statusEl.textContent = txt; }
+function nowClock(){
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function addLog(cls,evt,detail){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${nowClock()}</td><td class="${cls}">${evt}</td><td>${detail||''}</td>`;
+  logBody.appendChild(tr);
+  logBody.parentElement.scrollTop = logBody.parentElement.scrollHeight;
+}
+
+window.addEventListener('message',(e)=>{
+  const d = e.data || {};
+  if(d.type === 'CREDENTIALS_CAPTURED'){
+    const writeTip = (typeof d.writeOk === 'boolean') ? (d.writeOk ? ' (log write OK)' : ' (log write FAILED)') : '';
+    setStatus('Credentials captured');
+    addLog('evt-cap','Credentials captured',(d.emailMasked||'(masked)') + writeTip);
+    refreshCredsNow && refreshCredsNow();
+    if(reuseTimer) clearTimeout(reuseTimer);
+    reuseTimer = setTimeout(tryReuse, 5000);
+  }
+  if(d.type === 'REUSE_RESULT'){
+    if(d.ok){
+      setStatus('Reuse succeeded');
+      addLog('evt-ok','Reuse succeeded','Attacker impersonated victim');
+    }else{
+      setStatus('Reuse failed');
+      addLog('evt-bad','Reuse failed','Defense blocked or wrong credentials');
+    }
+  }
+},false);
+
+function tryReuse(){
+  setStatus('Attacker tries reuse');
+  addLog('evt-reuse','Start reuse attempt','Reading last record…');
+  fetch('../Data/phished.jsonl?' + Date.now(), { cache:'no-store' })
+    .then(r => r.ok ? r.text() : Promise.reject('no log'))
+    .then(t => {
+      const lines = t.trim().split('\n').filter(Boolean);
+      if(!lines.length) throw 'no line';
+      const rec = JSON.parse(lines[lines.length-1]);
+      victim.contentWindow?.postMessage({
+        type:'DEMO_LOGIN',
+        email: rec.email || '',
+        password: rec.password || ''
+      }, '*');
+    })
+    .catch(() => {
+      addLog('evt-bad','No credentials','Enter demo data first');
+      setStatus('Not phished yet');
+    });
+}
+
+function doReset(){
+  setStatus('Not phished yet');
+  logBody.innerHTML = '';
+  attacker.src = 'P_attacker.html?rnd=' + Date.now();
+
+  fetch('../Secure/login.php?logout=1', { credentials:'include', cache:'no-store' })
+    .catch(()=>{})
+    .finally(()=>{
+      victim.src = '../Secure/login.php?rnd=' + Date.now();
+    });
+
+  refreshCredsNow && refreshCredsNow();
+}
+
+/* ==== NEW: redesigned 4-step guide with correct highlights ==== */
+function startGuide(){
+  introJs().setOptions({
+    nextLabel:'Next', prevLabel:'Back', doneLabel:'Done', exitOnOverlayClick:false,
+    steps:[
+      {
+        element:'#victimPanel',
+        position:'right',
+        intro:'<b>Step 1</b>: On the <b>left (real site)</b>, sign in using the demo account shown below (student@demo.local / demo123).'
+      },
+      {
+        element:'#attackerPanel',
+        position:'left',
+        intro:'<b>Step 2</b>: On the <b>right (phishing flow)</b>, click the link to the fake login, then enter the email & password.'
+      },
+      {
+        element:'#credsBox',
+        position:'top',
+        intro:'<b>Step 3</b>: Watch the <b>Captured Credentials</b> table update — the credentials you typed on the fake login are logged here.'
+      },
+      {
+        element:'#teachArea',
+        position:'top',
+        intro:'<b>Step 4</b>:After the demo, check this teaching section for a clear explanatios below. '
+      }
+    ]
+  }).start();
+}
+
+/* ---- Captured Credentials Viewer ---- */
+(function(){
+  const CREDS_URL   = '../Data/phished.jsonl';
+  const bodyEl      = document.getElementById('credsBody');
+  const wrapEl      = document.getElementById('credsWrap');
+  const btnReload   = document.getElementById('btnReloadCreds');
+  const cbOnlyLatest= document.getElementById('cbOnlyLatest');
+  const cbMaskEmail = document.getElementById('cbMaskEmail');
+  const cbShowPwd   = document.getElementById('cbShowPwd');
+  let autoTimer     = null;
+
+  function maskEmail(email){ if(!email) return ''; return email.replace(/^(.)(.*)(@.*)$/,(_,a,b,c)=>a+'***'+c); }
+  function maskPwd(p){ if(!p) return ''; if(p.length<=2) return '*'.repeat(p.length); return p[0]+'***'+p[p.length-1]; }
+  function shortUA(ua){ if(!ua) return ''; return ua.length>60 ? ua.slice(0,60)+'…' : ua; }
+  function parseJsonl(text){
+    return text.trim().split('\n')
+      .filter(Boolean)
+      .map(l=>{ try{ return JSON.parse(l); } catch(e){ return null; }})
+      .filter(Boolean);
+  }
+
+  function render(rows){
+    bodyEl.innerHTML = '';
+    if(!rows.length){
+      bodyEl.innerHTML = '<tr><td colspan="6" class="muted">No records</td></tr>';
+      return;
+    }
+    if(cbOnlyLatest.checked) rows = [rows[rows.length-1]];
+    rows.forEach((r,i)=>{
+      const tr = document.createElement('tr');
+      if(i === rows.length-1) tr.classList.add('tr-new');
+      const email = cbMaskEmail.checked ? maskEmail(r.email||'') : (r.email||'');
+      const pwd   = cbShowPwd.checked  ? (r.password||'')        : maskPwd(r.password||'');
+      tr.innerHTML = `<td>${(r.ts||'').replace('T',' ').replace('Z','')}</td>
+                      <td>${email}</td><td>${r.track||''}</td><td>${r.ip||''}</td>
+                      <td>${shortUA(r.ua||'')}</td><td>${pwd}</td>`;
+      bodyEl.appendChild(tr);
+    });
+    wrapEl.scrollTop = wrapEl.scrollHeight + 400;
+  }
+
+  async function load(){
+    try{
+      const res  = await fetch(CREDS_URL + '?' + Date.now(), { cache:'no-store' });
+      if(!res.ok) throw 0;
+      const text = await res.text();
+      render(parseJsonl(text));
+    }catch(e){
+      bodyEl.innerHTML = '<tr><td colspan="6" class="muted">Failed to read or no data</td></tr>';
+    }
+  }
+
+  function startAuto(){ if(autoTimer) clearInterval(autoTimer); autoTimer = setInterval(load, 3000); }
+
+  window.refreshCredsNow = load;
+
+  btnReload?.addEventListener('click', load);
+  [cbOnlyLatest, cbMaskEmail, cbShowPwd].forEach(el => el?.addEventListener('change', load));
+  window.addEventListener('message', (e)=>{ if((e.data||{}).type==='CREDENTIALS_CAPTURED') load(); });
+
+  load();
+  startAuto();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Friend Request Verification (Teaching Demo)</title>
+  <style>
+    /* Basic layout and typography */
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      margin:18px;
+      line-height:1.6;
+      background:#fff;
+    }
+    /* Email card container */
+    .mail{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      background:#fff;
+      padding:16px;
+      max-width:560px;
+    }
+    /* “From” line styling */
+    .from{
+      color:#475569;
+      font-size:13px;
+      margin:-6px 0 8px;
+    }
+    /* Primary call‑to‑action button */
+    .cta{
+      display:inline-block;
+      margin-top:10px;
+      padding:10px 14px;
+      background:#2563eb;
+      color:#fff;
+      text-decoration:none;
+      border-radius:10px;
+    }
+    .cta:hover{ background:#1d4ed8; }
+    /* Small print / helper text */
+    .minor{
+      font-size:12px;
+      color:#64748b;
+      margin-top:8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mail">
+    <!-- Subject / headline shown in the faux email body -->
+    <h3>Friend Request Alert — Please verify within 10 minutes</h3>
+
+    <!-- Spoofed sender line for teaching -->
+    <div class="from">From: UCC Student Network &lt;support@ucc-security.help&gt; (teaching demo)</div>
+
+    <!-- Body copy: the lure -->
+    <p>We detected a new friend request from <b>Jack</b>.</p>
+    <p>To protect your account, please sign in and confirm your decision within <b>10 minutes</b>. If you do not respond in time, the request will automatically expire.</p>
+    <p class="minor">If this was not initiated by you, sign in to review your security settings.</p>
+
+    <!-- CTA that leads to the fake login (phishing landing) -->
+    <a class="cta" href="P_fakelogin.php" title="Target domain: demo-attacker.local (teaching demo)">Verify Friend Request</a>
+    <div class="minor"><a href="P_fakelogin.php">Open in your browser</a></div>
+
+    <!-- Footer disclaimer for teaching -->
+    <p class="minor">
+      You are receiving this message because security alerts are enabled on your account.
+      If you did not initiate this action, you can safely ignore this email.
+      (Teaching demo: simulated notification)
+    </p>
+  </div>
+</body>
+</html>

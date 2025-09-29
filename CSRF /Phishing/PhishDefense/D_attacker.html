@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Phishing Email (Demo) — With Authentication Badges</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:18px;line-height:1.6;}
+  .badges{display:flex;gap:8px;margin-bottom:10px}
+  .badge{padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #fecaca;background:#fee2e2;color:#b91c1c;position:relative}
+  .help{display:inline-block;margin-left:4px;width:16px;height:16px;border-radius:50%;background:#475569;color:#fff;font-size:12px;line-height:16px;text-align:center;cursor:pointer;font-weight:bold}
+  .tooltip{display:none;position:absolute;top:125%;left:0;z-index:10;max-width:240px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;font-size:12px;line-height:1.45;box-shadow:0 4px 12px rgba(0,0,0,0.15);color:#0f172a}
+  .badge.active .tooltip{display:block}
+
+  .mail{border:1px solid #e5e7eb;border-radius:12px;background:#fff;padding:16px;max-width:560px}
+  .from{color:#475569;font-size:13px;margin:-6px 0 8px}
+  .cta{display:inline-block;margin-top:10px;padding:10px 14px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px}
+  .cta:hover{background:#1d4ed8}
+  .minor{font-size:12px;color:#64748b;margin-top:8px}
+
+  /* Teaching accordions */
+  details{margin:10px 0;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+  details > summary{padding:8px 12px;cursor:pointer;font-weight:600;list-style:none}
+  details > summary::-webkit-details-marker{display:none}
+  details .box{padding:8px 12px;border-top:1px solid #e5e7eb;background:#fafafa;font-size:14px;line-height:1.55;color:#0f172a;max-height:240px;overflow:auto}
+  pre{margin:0;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+  <div class="badges">
+    <span class="badge">SPF: fail
+      <span class="help" onclick="toggleTip(this)">?</span>
+      <div class="tooltip">
+        <b>SPF (Sender Policy Framework)</b><br>
+        The sending server is not authorized for this domain. This often means the sender address is forged.
+      </div>
+    </span>
+    <span class="badge">DKIM: fail
+      <span class="help" onclick="toggleTip(this)">?</span>
+      <div class="tooltip">
+        <b>DKIM (DomainKeys Identified Mail)</b><br>
+        The email’s digital signature could not be verified. The message may have been altered or sent without proper signing.
+      </div>
+    </span>
+    <span class="badge">DMARC: fail
+      <span class="help" onclick="toggleTip(this)">?</span>
+      <div class="tooltip">
+        <b>DMARC (Domain-based Message Authentication)</b><br>
+        DMARC combines SPF and DKIM results. Failing both means the domain owner rejects this email as untrusted.
+      </div>
+    </span>
+  </div>
+
+  <div class="mail">
+    <h3>Friend Request: Please verify within 10 minutes</h3>
+    <div class="from">From: UCC Student Network &lt;support@ucc-security.help&gt; (demo)</div>
+
+    <p>We detected a new friend request from <b>Zhang Wei</b>.</p>
+    <p>For your account safety, please <b>sign in within 10 minutes</b> to approve or deny this request.</p>
+    <p class="minor">If this was not initiated by you, please sign in and review your security settings.</p>
+
+    <a class="cta" href="#" onclick="openFake(); return false;">Verify Friend Request</a>
+    <div class="minor"><a href="#" onclick="openFake(); return false;">Open in browser</a></div>
+
+    <p class="minor">The red badges above are for teaching only: this email failed SPF/DKIM/DMARC checks and is more likely to be spoofed.</p>
+  </div>
+ 
+
+<script>
+function toggleTip(el){
+  // Close others
+  document.querySelectorAll('.badge').forEach(b=>b.classList.remove('active'));
+  el.parentElement.classList.toggle('active');
+}
+// Click outside closes tooltips
+document.addEventListener('click',function(e){
+  if(!e.target.classList.contains('help')){
+    document.querySelectorAll('.badge').forEach(b=>b.classList.remove('active'));
+  }
+});
+function openFake(){
+  try {
+    window.parent?.postMessage({ type: 'NAVIGATE_REQUEST', href: 'D_fakelogin.php' }, '*');
+  } catch (e) {
+    location.href = 'D_fakelogin.php';
+  }
+}
+</script>
+</body>
+</html>

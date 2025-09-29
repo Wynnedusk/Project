@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clickbait Attack — Gate → Sanitize → Block(Defense)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{ --blue:#2563eb; --blue-d:#1d4ed8; --bg:#f4f6fa; --card:#fff; --border:#e5e7eb; --muted:#64748b; --ink:#0f172a; --info-bg:#ecfeff; --info-bd:#a5f3fc; --info-tx:#0e7490; }
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:22px}
+    h1{margin:0 0 12px;text-align:center}
+
+    .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin:10px 0 16px}
+    .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+    .badge{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#fff}
+    .status{font-weight:700}
+    /* Status colors: aligned with attacker panel; colorize text only */
+    .s-warn{color:#eab308;}  /* Opening bait (yellow) */
+    .s-good{color:#16a34a;}  /* Protected (green) */
+
+    .hint{font-size:13px;color:var(--muted);text-align:center;margin:0 0 10px}
+
+    .container{display:flex;gap:20px;max-width:1200px;margin:0 auto;align-items:stretch}
+    .panel{border:1px solid var(--border);background:var(--card);border-radius:12px;flex:1;display:flex;flex-direction:column;position:relative;height:600px;overflow:hidden}
+    .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);background:#f3f4f6}
+    .frameWrap{flex:1;min-height:0;overflow:hidden}
+    iframe{width:100%;height:520px;border:0;border-radius:0 0 12px 12px;background:#fff}
+
+    .narr{margin:8px 12px 0;border:1px solid var(--info-bd);background:var(--info-bg);color:var(--info-tx);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.45}
+
+    /* details section (kept in sync with attacker panel) */
+    details{margin:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;overflow:visible;flex-shrink:0}
+    details>summary{padding:8px 12px;cursor:pointer;font-weight:600}
+    details .box{padding:8px 12px;border-top:1px solid var(--border);background:#fafafa;height:260px;max-height:none;overflow:auto;font-size:14px}
+    pre{margin:0;line-height:1.45}
+
+    /* Top teaching note */
+    .note-inline{margin:8px 12px 0;border:1px solid var(--border);background:#f8fafc;border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5;color:var(--ink)}
+    .note-inline .small{color:var(--muted);font-size:12.5px;margin-top:2px}
+    .note-inline ul{margin:6px 0 0 18px}
+
+    /* Bottom teaching area (aligned with attacker panel) */
+    .teach{max-width:1200px;margin:20px auto 0;display:flex;flex-direction:column;gap:14px}
+    .teachbox{border:1px solid var(--border);border-radius:10px;background:#fff;overflow:hidden}
+    .teachbox>summary{padding:12px 14px;list-style:none;font-weight:700;cursor:pointer;background:#f8fafc;border-bottom:1px solid var(--border)}
+    .teachbox>summary::-webkit-details-marker{display:none}
+    .teachbox[open]>summary{background:#eef2ff}
+    .teachbox .box{padding:12px 14px}
+    pre.codeblock{background:#0f172a;color:#e5e7eb;border-radius:8px;padding:10px;overflow:auto;margin:0}
+    code.inline{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#f1f5f9;color:#0f172a;border-radius:4px;padding:0 6px}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* Teaching area: tighter spacing for this page */
+    .teach{margin-top:10px;gap:8px}
+    #teachingSection .teachbox{margin:0}
+    #teachingSection .teachbox + .teachbox{margin-top:8px}
+    #teachingSection .teachbox > summary{padding:10px 12px}
+    #teachingSection .teachbox .box{padding:10px 12px;height:auto;max-height:none;overflow:visible}
+    #teachingSection .teachbox .box > *:first-child{margin-top:0}
+    #teachingSection .teachbox .box > *:last-child{margin-bottom:0}
+    #teachingSection .teachbox .box p{margin:8px 0}
+    #teachingSection .teachbox .box ul,
+    #teachingSection .teachbox .box ol{margin:8px 0 0 20px}
+    #teachingSection pre.codeblock{margin:0}
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <h1>Clickbait Defense — Gate → Sanitize → Block</h1>
+
+  <div class="topbar">
+    <button class="btn" id="btnReset">Reset Demo</button>
+    <button class="btn btn-primary" id="btnGuide">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="status">Idle</span></span>
+  </div>
+
+  <p class="hint">
+    Left: victim feed with a teaser. Right: bait/lander. The defense gates outbound links, sanitizes input, and blocks risky downloads.
+  </p>
+
+  <div class="container">
+    <div class="panel" id="leftPanel">
+      <h2>Victim Feed</h2>
+      <div id="narrLeft" class="narr">Defense is idle…</div>
+      <div class="frameWrap"><iframe id="feed" src="D_feed.php" title="Victim Feed"></iframe></div>
+    </div>
+
+    <div class="panel" id="rightPanel">
+      <h2>Defense / Lander</h2>
+
+      <div class="note-inline" id="teachNoteInline" data-intro="Defense note: outbound links are gated; email posts are sanitized; downloads are blocked or replaced with a harmless file.">
+        <strong>Defense note · What is being enforced</strong>
+        <div class="small">Rules may apply differently per branch (phish vs. download).</div>
+        <ul>
+          <li><b>Phishing form:</b> input is sanitized/blocked; no real data reaches the backend.</li>
+          <li><b>Ads/Download:</b> risky downloads are intercepted or replaced with a safe placeholder.</li>
+        </ul>
+      </div>
+
+      <div id="narrRight" class="narr">Waiting for bait to open… Once routed, defenses will evaluate the action.</div>
+      <div class="frameWrap"><iframe id="pane" src="about:blank" title="Defense Lander"></iframe></div>
+    </div>
+  </div>
+
+   <!-- Teaching section (aligned with attack panel style) -->
+   <div class="teach" id="teachingSection">
+    <details class="teachbox" open>
+      <summary>What just happened?</summary>
+      <div class="box">
+        <p>
+          The feed tried to open a <b>bait</b>. The defense checked the destination and then applied protections:
+        </p>
+        <ul>
+          <li><b>Phishing branch:</b> email submission is <b>blocked or sanitized</b>; nothing useful is stored.</li>
+          <li><b>Ads/Download branch:</b> the page is opened in a restricted sandbox; any demo download shown there is a harmless file.</li>
+        </ul>
+        <p class="muted">The parent listens for messages from child iframes and updates status/narration as the chain progresses.</p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>Why did the defense succeed?</summary>
+      <div class="box">
+        <ol style="margin:0 0 0 20px">
+          <li><b>Outbound link gating:</b> every external click is checked against an allow-list; trusted domains open directly, others trigger an interstitial.</li>
+          <li><b>Interstitial step:</b> the warning explains the risks and offers “Continue in sandbox”.</li>
+          <li><b>Sandbox mode:</b> risky pages are opened with reduced privileges if the user insists on continuing.</li>
+          <li><b>Message-handling caution (teaching):</b> the parent and child frames communicate via <code class="inline">postMessage</code> for UI updates; in production the receiver must verify <code class="inline">event.origin</code> before acting (do not rely on <code>'*'</code> without checks).</li>
+          <li><b>Server-side logging (teaching only):</b> the phishing lander writes a teaching log (JSONL) on the server for visibility; the demo intentionally omits production-grade validation and rate-limiting — mention this to students when discussing hardening.</li>
+        </ol>
+        <p class="muted" style="margin-top:10px">
+          Bottom line: route control + user friction + sandboxing stop most of the clickbait chain early.  
+          Note: this demo focuses on the routing/isolation controls; full production defenses also include strict origin checks, CSRF protections, input validation, and rate-limiting on server endpoints. 
+        </p>
+      </div>
+    </details>
+    
+
+    <details class="teachbox">
+      <summary>View attacker code (key lines)</summary>
+      <div class="box">
+<pre class="codeblock"><code>// C_bait.html — lure
+btn.addEventListener('click', () =&gt; {
+  window.parent.postMessage({ type:'CLICKBAIT_FIRED' }, '*');
+  location.href = Math.random() &lt; 0.6 ? 'C_lander_ads.html'
+                                      : 'C_lander_phish.html';
+});
+
+// C_lander_phish.html — email grab
+await fetch('C_collect.php', {
+  method:'POST', body:'email=' + encodeURIComponent(val)
+});</code></pre>
+        <p class="muted">
+          Attacker code simply routes to a phishing or download page. The phishing lander posts any email to the backend.
+        </p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>View defense code (key lines)</summary>
+      <div class="box">
+<pre class="codeblock"><code>// D_rules.js — allow-list router
+const ALLOW = ['ucc.ie','bbc.com','rte.ie'];
+function route(url){
+  const h = new URL(url).hostname;
+  const safe = ALLOW.some(x =&gt; h===x || h.endsWith('.'+x));
+  return { kind: safe ? 'safe' : 'interstitial', url };
+}
+
+// D_panel.html — sandbox decision
+if (d.type==='DEF_CONTINUE_SANDBOX'){
+  pane.src = d.url;
+  narrRight.textContent = 'Opened in a restricted sandbox.';
+}</code></pre>
+        <p class="muted">
+          Defense code checks the domain, shows a warning if not trusted, and if the user insists it opens in a sandbox with limited privileges.
+        </p>
+      </div>
+    </details>
+  </div>
+
+
+  <script>
+  (function(){
+    const st = document.getElementById('statusText');
+    const feed = document.getElementById('feed');
+    const pane = document.getElementById('pane');
+    const btnReset = document.getElementById('btnReset');
+    const btnGuide = document.getElementById('btnGuide');
+    const narrLeft  = document.getElementById('narrLeft');
+    const narrRight = document.getElementById('narrRight');
+
+    function setStatus(text, cls){
+      st.textContent = text;
+      st.className = 'status';
+      if(cls) st.classList.add(cls);
+    }
+
+    // Listen to messages from the left feed / interstitial / sandbox iframes
+    window.addEventListener('message', (e)=>{
+      const d = e.data || {};
+
+      // First step after teaser click on the left: mark yellow and wait for a routing decision
+      if (d.type === 'OPEN_BAIT'){
+        setStatus('Opening bait','s-warn');
+        narrLeft.textContent  = 'User clicked a teaser; defense is evaluating the route.';
+        narrRight.textContent = 'Checking allow-list / showing interstitial if needed…';
+        return;
+      }
+
+      // Feed decided: interstitial is required
+      if (d.type === 'DEF_INTERSTITIAL'){
+        setStatus('Opening bait','s-warn');
+        pane.src = 'D_interstitial.php?u=' + encodeURIComponent(d.url || '');
+        narrRight.textContent = 'Not on the allow-list: showing an interstitial.';
+        return;
+      }
+
+      // Feed decided: safe to open directly
+      if (d.type === 'DEF_OPEN_SAFE'){
+        setStatus('Protected','s-good');
+        pane.src = 'D_panel.html?safe=1&u=' + encodeURIComponent(d.url || '');
+        narrRight.textContent = 'Allow-listed domain opened normally.';
+        narrLeft.textContent  = 'Defense allowed the safe route.';
+        return;
+      }
+
+      // User clicked “Continue (sandbox)” on the interstitial
+      if (d.type === 'DEF_CONTINUE_SANDBOX'){
+        setStatus('Protected','s-good');
+        pane.src = 'D_sandbox.html?u=' + encodeURIComponent(d.url || '');
+        narrRight.textContent = 'Opened in a restricted sandbox.';
+        narrLeft.textContent  = 'Defense limited risky capabilities.';
+        return;
+      }
+
+      // Compatibility: if the demo still emits attacker-style events (submit/download), mark as protected too
+      if (d.type === 'CLICKBAIT_CHAIN' || (d.type === 'ATTACK_ACTION' && d.action==='ads_download')){
+        setStatus('Protected','s-good');
+        narrRight.textContent = 'Defense evaluated the action; no harmful effect delivered.';
+        narrLeft.textContent  = 'Defense engaged.';
+        return;
+      }
+    });
+
+    // Reset
+    btnReset.addEventListener('click', ()=>{
+      setStatus('Idle');
+      narrLeft.textContent  = 'Defense is idle…';
+      narrRight.textContent = 'Waiting for bait to open… Once routed, defenses will evaluate the action.';
+      feed.src = 'D_feed.php?rnd=' + Date.now();
+      pane.src = 'about:blank';
+    });
+
+    // Start the step-by-step guide (Intro.js)
+    function startGuide(){
+      if (typeof introJs!=='function'){ alert('Intro library not loaded.'); return; }
+      introJs().setOptions({
+        nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+        exitOnOverlayClick:false, scrollToElement:true,
+        steps:[
+          { element:'#leftPanel',  intro:'Step 1: Click the teaser on the left. Status turns yellow (Opening bait).' },
+          { element:'#rightPanel', intro:'Step 2: Not on allow-list → an interstitial appears. You may continue in sandbox.' },
+          { element:'#rightPanel', intro:'Step 3: After allow/sandbox, status turns green: “Protected”.' },
+          { element:'#teachingSection', intro:'Step 4: Read why the defense works and the key ideas.' }
+        ]
+      }).start();
+    }
+    btnGuide.addEventListener('click', startGuide);
+  })();
+  </script>
+</body>
+</html>

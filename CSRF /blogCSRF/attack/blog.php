@@ -2,6 +2,13 @@
 // Load session handling for the attack simulation module
 require_once __DIR__ . '/Asession.php';
 
+/* ---- Optional: clear the "post published" flash flag ---- */
+if (isset($_GET['clearFlash'])) {
+    unset($_SESSION['flash_post_success']);
+    http_response_code(204);
+    exit;
+}
+
 // Handle an optional GET request to clear the red arrow flag (triggered after attack visual completes)
 if (isset($_GET['clearRed'])) {
     unset($_SESSION['attack_drawRedArrow']);
@@ -38,7 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($newPost)) {
             $_SESSION['posts'][] = $newPost;
 
-            // If the submitted post matches the CSRF attack pattern, flag it for red arrow visualization
+            /* ---- Set "post published" flash flag (applies to both manual and CSRF posts) ---- */
+            $_SESSION['flash_post_success'] = true;
+
+            // If the submitted post matches the CSRF attack pattern, flag it for red-arrow visualization
             if (strpos($newPost, 'Automatically posted by CSRF via session cookie') !== false) {
                 $_SESSION['attack_drawRedArrow'] = true;
             }
@@ -69,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-group button { padding: 10px 20px; font-size: 16px; }
     </style>
 
-    <!-- External libraries for step-by-step teaching and arrows -->
+    <!-- External libraries for step-by-step teaching and arrow drawings -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
     <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.0.7/leader-line.min.js"></script>
@@ -96,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="">
         <textarea id="postBox" name="content" placeholder="Write something..." required></textarea><br>
-        <button type="submit">Post</button>
+        <button id="postSubmit" type="submit">Post</button>
     </form>
 
     <form method="GET" action="">
@@ -109,16 +119,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="delete" style="margin-top:10px;">Logout</button>
     </form>
 <?php else: ?>
-    <!-- Shown to anonymous visitors: can view posts, but cannot post -->
+    <!-- Anonymous visitors can view posts but cannot post -->
     <p style="color: red;"><strong>Status:</strong> Not logged in</p>
     <p><a id="loginLink" href="Alogin.php?redirect=blog.php?step=2">Click here to simulate login</a></p>
 <?php endif; ?>
 
-<!-- Always visible to all users (anonymous read access) -->
+<!-- Always visible to all users (read-only list) -->
 <h2>Posts:</h2>
 <?php foreach (array_reverse($_SESSION['posts']) as $post): ?>
     <div class="post"><?= htmlspecialchars($post) ?></div>
 <?php endforeach; ?>
+
 <script>
 window.addEventListener("DOMContentLoaded", function () {
     const step = new URLSearchParams(window.location.search).get("step");
@@ -143,7 +154,7 @@ window.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Clear existing leader-line arrows on logout
+    // On logout, clear any existing leader-line arrows
     <?php if (!$loggedIn): ?>
     const existingLines = document.querySelectorAll("svg.leader-line");
     existingLines.forEach(line => line.remove());
@@ -184,10 +195,58 @@ window.addEventListener("DOMContentLoaded", function () {
                 color: "red", size: 4, path: "straight", startPlug: "disc", endPlug: "arrow"
             });
 
-            // Clear the red arrow session flag after rendering
+            // After rendering, clear the server-side flag so it doesn't repeat
             fetch("blog.php?clearRed=1");
         }
     }, 1500);
 });
 </script>
 <?php endif; ?>
+
+<?php if (!empty($_SESSION['flash_post_success'])): ?>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const anchor = document.getElementById('postSubmit') || document.getElementById('blogBox');
+  if (!anchor) return;
+
+  // 1) Create and show toast (your original styles and positioning logic kept)
+  const toast = document.createElement('div');
+  toast.textContent = '✅ Post published!';
+  Object.assign(toast.style, {
+    position:'fixed', zIndex:'9999', background:'#10b981', color:'#fff',
+    padding:'8px 12px', borderRadius:'10px', boxShadow:'0 6px 18px rgba(0,0,0,.15)',
+    fontWeight:'600', fontSize:'14px', opacity:'0', transform:'translateY(-6px)',
+    transition:'opacity .28s ease, transform .28s ease'
+  });
+  document.body.appendChild(toast);
+
+  function positionToast(){
+    const r = anchor.getBoundingClientRect();
+    const gap = 10;
+    if (r.right + 220 < window.innerWidth) {
+      toast.style.left = (r.right + gap) + 'px';
+      toast.style.top  = (r.top + window.scrollY - 4) + 'px';
+    } else {
+      toast.style.left = (r.left + window.scrollX + r.width/2 - toast.offsetWidth/2) + 'px';
+      toast.style.top  = (r.top + window.scrollY - toast.offsetHeight - gap) + 'px';
+    }
+  }
+  requestAnimationFrame(()=>{ positionToast(); toast.style.opacity='1'; toast.style.transform='translateY(0)'; });
+  ['scroll','resize'].forEach(ev=>window.addEventListener(ev, positionToast));
+
+  setTimeout(()=>{
+    toast.style.opacity='0';
+    toast.style.transform='translateY(-6px)';
+    setTimeout(()=>toast.remove(), 280);
+  }, 2200);
+
+  // 2) Runs only on the visible page, then clears the server-side flash flag
+  fetch('blog.php?clearFlash=1', {cache:'no-store'});
+});
+</script>
+<?php endif; ?>
+
+
+
+</body>
+</html>

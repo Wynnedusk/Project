@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CSRF Transfer — Phishing Attack Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* ===== Basic theme tokens (colors, surfaces, typography) ===== */
+    :root {
+      --blue:#2563eb; --blue-d:#1d4ed8;
+      --bg:#f4f6fa; --card:#fff; --border:#e5e7eb;
+      --muted:#64748b; --ink:#0f172a;
+      --ok:#16a34a; --bad:#b91c1c;
+    }
+
+    /* Reset & base layout */
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      margin:0; padding:30px; background:var(--bg); color:var(--ink); text-align:center;
+    }
+
+    /* Header & controls */
+    h1{margin:0 0 16px}
+    .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin-bottom:18px}
+    .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+    .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+    .badge{padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-weight:600}
+    .s-ok{color:var(--ok)}
+    .s-bad{color:var(--bad)}
+
+    /* Two-panel stage (left victim, right attacker) */
+    .container{display:flex;gap:30px;justify-content:center;align-items:flex-start}
+    .panel{
+      border:1px solid var(--border); background:var(--card);
+      padding:10px; width:600px; height:600px; border-radius:12px;
+      display:flex; flex-direction:column;
+    }
+    .panel h2{margin:0 0 8px; font-size:18px}
+    .frameWrap{flex:1; min-height:0; overflow:auto}
+    .frameWrap>iframe{width:100%; height:100%; border:none; border-radius:6px; background:#fff}
+    .reload-btn{margin-top:10px}
+
+    /* Teaching drawer with explanations */
+    .teach{max-width:1230px;margin:20px auto 0;display:flex;flex-direction:column;gap:14px;text-align:left}
+    .teachbox{border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden}
+    .teachbox>summary{padding:12px 14px; list-style:none; font-weight:700; cursor:pointer; background:#f8fafc; border-bottom:1px solid var(--border)}
+    .teachbox>summary::-webkit-details-marker{display:none}
+    .teachbox[open]>summary{background:#eef2ff}
+    .teachbox .box{padding:12px 14px}
+    code,pre{background:#0f172a; color:#e5e7eb; border-radius:8px; padding:10px; display:block; overflow:auto}
+    .muted{color:var(--muted); font-size:13px}
+  </style>
+
+  <!-- Intro.js for step-by-step highlighting (UX aid only) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <!-- Page title -->
+  <h1>CSRF Transfer — Phishing Attack Demo</h1>
+
+  <!-- Top controls: reset, guided tour, live status badge -->
+  <div class="topbar">
+    <button class="btn" onclick="doReset()">Reset Demo</button>
+    <button class="btn btn-primary" onclick="startGuide()">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="s-ok">Idle</span></span>
+  </div>
+
+  <div class="container">
+    <!-- Left Panel (Victim) -->
+    <div class="panel" id="victimPanel">
+      <h2>Login (Victim)</h2>
+      <div class="frameWrap">
+        <!-- Decided by JS: first load = login; afterwards restore last visited page -->
+        <iframe id="victimFrame" name="victimFrame" src="about:blank" title="Victim"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadCurrentPage()">Reload Current Page</button>
+    </div>
+
+    <!-- Right Panel (Attacker) -->
+    <div class="panel" id="attackerPanel">
+      <h2>Attacker Attempt</h2>
+      <div class="frameWrap">
+        <!-- Loads the phishing page that will attempt a POST-based CSRF -->
+        <iframe id="attackerFrame" name="attackerFrame" src="phishing-link.html" title="Phishing Attack"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadAttacker()">Reload Attacker</button>
+    </div>
+  </div>
+
+  <!-- Teaching area (ATTACK) -->
+  <div class="teach" id="teachArea">
+    <details class="teachbox">
+      <summary>What just happened?</summary>
+      <div class="box">
+        <p>The right panel is a fake “scholarship” page. Opening/clicking it silently sent a money-transfer request using your current login.</p>
+        <ol style="margin:0 0 0 18px;">
+          <li>You were logged in on the left, so your browser had your session.</li>
+          <li>The fake page auto-submitted a hidden form to transfer 1000 Euros.</li>
+          <li>Your browser attached your real session cookies.</li>
+          <li>The server accepted it, so the left log shows a debit and the status turns <b>Attacked</b> (red).</li>
+        </ol>
+        <p><b>Notice:</b> the new debit in the left log and the red status badge.</p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>Why did the attack succeed?</summary>
+      <div class="box">
+        <ul style="margin:0 0 0 18px;">
+          <li><b>Cookies auto-attach:</b> your site’s cookies go with requests to that site, even when another site triggers them.</li>
+          <li><b>No CSRF token check:</b> the server didn’t ask for a second proof, so it treated the forged request as yours.</li>
+        </ul>
+        <p class="muted" style="margin-top:10px">Analogy: the door opens with your key (cookie). Without a PIN (CSRF token), a tricked doorman still lets someone in.</p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>What is broken in the code?</summary>
+      <div class="box">
+<pre><code>// pay.php (vulnerable)
+$money = $_POST['money'] ?? null;
+if ($money) {
+  transfer_funds($_SESSION['user_id'], $money); // ❌ no CSRF check
+  echo "Transaction successful!"; exit;
+}
+echo "Nothing changed";
+</code></pre>
+        <ul style="margin:0 0 0 18px;">
+          <li><b>Accepts</b> any “money=...” request.</li>
+          <li><b>Moves money</b> using your login.</li>
+          <li><b>Missing</b> the CSRF token verification step.</li>
+        </ul>
+        <p><b>Fix:</b> require a valid CSRF token and reject if it’s missing or wrong.</p>
+      </div>
+    </details>
+  </div>
+
+<script>
+  /* ---------- Grab key elements ---------- */
+  const victimFrame   = document.getElementById('victimFrame');
+  const attackerFrame = document.getElementById('attackerFrame');
+  const statusEl      = document.getElementById('statusText');
+
+  /* ---------- Status badge: green "Idle" vs red "Attacked" ---------- */
+  function setStatus(attacked){
+    if(attacked){
+      statusEl.textContent = 'Attacked';
+      statusEl.classList.remove('s-ok');
+      statusEl.classList.add('s-bad');
+    }else{
+      statusEl.textContent = 'Idle';
+      statusEl.classList.remove('s-bad');
+      statusEl.classList.add('s-ok');
+    }
+  }
+
+  /* ---------- Persist victim iframe page between actions ---------- */
+  const STORE_KEY = 'attack_victim_last_url';
+
+  // First boot: go to login unless a previous page was stored for this tab
+  function bootVictim(){
+    const saved = sessionStorage.getItem(STORE_KEY);
+    // First time → login; otherwise restore last page (login or home)
+    victimFrame.src = saved || '../server/login.html';
+  }
+
+  // After each navigation inside the left iframe, remember its absolute URL
+  victimFrame.addEventListener('load', ()=>{
+    try{
+      const href = victimFrame.contentWindow.location.href;
+      if(href && href !== 'about:blank'){
+        sessionStorage.setItem(STORE_KEY, href);
+      }
+    }catch(e){}
+  });
+
+  /* ---------- Helpers: reload panels without changing which page they are on ---------- */
+  // Reload current left page (keeps login/home)
+  function reloadCurrentPage(){
+    try{
+      const href = victimFrame.contentWindow?.location?.href || victimFrame.src;
+      const u = new URL(href, location.href);
+      u.searchParams.set('_v', Date.now()); // cache-busting param
+      victimFrame.src = u.toString();
+    }catch(e){
+      const u = new URL(victimFrame.src, location.href);
+      u.searchParams.set('_v', Date.now());
+      victimFrame.src = u.toString();
+    }
+  }
+
+  // Reload right phishing page (keeps the same URL, bust cache)
+  function reloadAttacker(){
+    const u = new URL(attackerFrame.src, location.href);
+    u.searchParams.set('_v', Date.now()); // cache-busting param
+    attackerFrame.src = u.toString();
+  }
+
+  /* ---------- Reset flow: clear server & local state, then return to login ---------- */
+  function doReset(){
+    // Tell server to reset demo state (ignore errors quietly)
+    fetch('../server/reset.php', { method:'POST', cache:'no-store' })
+      .catch(()=>{})
+      .finally(()=>{
+        // Drop the remembered page, reset UI, go back to login, refresh attacker panel
+        sessionStorage.removeItem(STORE_KEY);
+        setStatus(false);
+        victimFrame.src = '../server/login.html'; // back to starting point
+        reloadAttacker();
+      });
+  }
+
+  /* ---------- Guided steps with Intro.js (text intentionally unchanged) ---------- */
+  function startGuide(){
+    introJs().setOptions({
+      nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+      exitOnOverlayClick:false, scrollToElement:true,
+      steps:[
+        { element:'#victimPanel',   intro:'Step 1: Log in on the left panel.' },
+        { element:'#attackerPanel', intro:'Step 2: Click the red button on the right to trigger the attack.' },
+        { element:'#victimPanel',   intro:'Step 3: Refresh the paneland watch the left log update and the status turn <b>Attacked</b>. ' },
+        { element:'#teachArea',     intro:'Step 4: After the demo, check this teaching section for a clear explanatios below.' }
+      ]
+    }).start();
+  }
+
+  /* ---------- Init on load ---------- */
+  bootVictim();
+  setStatus(false);
+</script>
+</body>
+</html>

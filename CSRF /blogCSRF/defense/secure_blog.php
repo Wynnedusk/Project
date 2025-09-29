@@ -2,22 +2,29 @@
 // Load session and initialize CSRF token, login state, etc.
 require_once __DIR__ . '/Dsession.php';
 
+// Optional: clear the one-time "post published" flash flag (for debugging or external calls)
+if (isset($_GET['clearFlash'])) {
+    unset($_SESSION['flash_post_success']);
+    http_response_code(204);
+    exit;
+}
+
 // Check login status
 $loggedIn = $_SESSION['loggedIn'] ?? false;
 $errorMessage = "";
 
-// Initialize posts and arrow drawing flag if not already set
+// Initialize posts and arrow-drawn flag if not already set
 if (!isset($_SESSION['global_posts'])) $_SESSION['global_posts'] = [];
 if (!isset($_SESSION['secureLoginArrowDrawn'])) $_SESSION['secureLoginArrowDrawn'] = false;
 
-// Clear all posts if requested via GET (only if logged in)
+// Clear all posts if requested via GET (only allowed when logged in)
 if ($loggedIn && isset($_GET['action']) && $_GET['action'] === 'clear') {
     $_SESSION['global_posts'] = [];
     header("Location: secure_blog.php");
     exit;
 }
 
-// Mark that login arrow has been drawn for teaching
+// Mark that the login arrow has been drawn (teaching visualization)
 if ($loggedIn && $_SESSION['secureLoginArrowDrawn'] === false) {
     $_SESSION['secureLoginArrowDrawn'] = true;
 }
@@ -25,7 +32,7 @@ if ($loggedIn && $_SESSION['secureLoginArrowDrawn'] === false) {
 // Handle POST requests (attempt to submit a new post)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($loggedIn && isset($_POST['content'])) {
-        $user_token = $_POST['csrf_token'] ?? '';
+        $user_token    = $_POST['csrf_token'] ?? '';
         $session_token = $_SESSION['csrf_token'];
 
         // === CRITICAL CSRF DEFENSE LOGIC ===
@@ -39,6 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newPost = strip_tags(trim($_POST['content']));
             if (!empty($newPost)) {
                 $_SESSION['global_posts'][] = $newPost;
+
+                // ✅ Set a one-time "post published" flash flag (consistent with the attack variant)
+                $_SESSION['flash_post_success'] = true;
+
                 header("Location: secure_blog.php");
                 exit;
             } else {
@@ -73,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-<h1>🛡️ Secure Blog (Token Protected)</h1>
+<h1>My Blog (Token Protected)</h1>
 
 <div class="btn-group">
     <button id="loginBox">Login</button>
@@ -90,11 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST" action="">
         <textarea id="postBox" name="content" required placeholder="Write something..."></textarea><br>
-     <!--Injecting a token into the form-->
+        <!-- CSRF token hidden field -->
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-
         <p style="color:#555;font-size:90%;">🔑 Hidden field <code>csrf_token</code> has been added to this form.</p>
-        <button type="submit">Post</button>
+        <!-- Anchor element for success toast positioning (kept for parity with attack variant) -->
+        <button id="postSubmit" type="submit">Post</button>
     </form>
 
     <form method="GET" action="">
@@ -126,24 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </ul>
 </div>
 
-<details>
-    <summary>Check the current CSRF Token</summary>
-    <code><?= htmlspecialchars($_SESSION['csrf_token']) ?></code>
-</details>
-
-<details>
-    <summary> View key code (token generation and validation)</summary>
-    <pre><code>// Setting the token (already done automatically in session.php)
-$_SESSION['csrf_token'] = bin2hex(random_bytes(16));
-
-// Checksum token
-$user_token = $_POST['csrf_token'] ?? '';
-if (!$user_token || $user_token !== $_SESSION['csrf_token']) {
-    $errorMessage = "CSRF token missing or invalid";
-}
-    </code></pre>
-</details>
-
 <script>
 window.addEventListener("DOMContentLoaded", function () {
     const step = new URLSearchParams(window.location.search).get("step");
@@ -161,14 +154,12 @@ window.addEventListener("DOMContentLoaded", function () {
         const postBox = document.getElementById("postBox");
         if (postBox) {
             postBox.setAttribute("data-intro", "You have successfully logged in. Now try to post something!");
-            setTimeout(() => {
-                introJs().start();
-            }, 300);
+            setTimeout(() => { introJs().start(); }, 300);
             sessionStorage.setItem("secureStep2", "true");
         }
     }
 
-    // Draw login arrow
+    // Draw a green login arrow (teaching visualization)
     <?php if ($loggedIn): ?>
         <?php if ($_SESSION['secureLoginArrowDrawn'] === false): ?>
         setTimeout(() => {
@@ -188,7 +179,7 @@ window.addEventListener("DOMContentLoaded", function () {
         <?php endif; ?>
     <?php endif; ?>
 
-    // Show red if attack detected
+    // If a CSRF attack was blocked, show a red marker and a guided explanation
     const blockIcon = document.getElementById("blockIcon");
     <?php if (!empty($_SESSION['attackBlocked'])): ?>
         if (blockIcon) {
@@ -197,7 +188,7 @@ window.addEventListener("DOMContentLoaded", function () {
                 introJs().setOptions({
                     steps: [{
                         element: '#blockIcon',
-                        intro: " Attack blocked!\n\nThe attacker attempted to post content without a valid CSRF token.\nBecause the token is required and not known to third-party sites,\nthe server rejected the request (HTTP 403).\nYou can open DevTools (F12) > Network to observe the rejection."
+                        intro: " Attack blocked!\n\nThe attacker attempted to post content without a valid CSRF token (HTTP 403)."
                     }]
                 }).start();
             }, 500);
@@ -206,6 +197,57 @@ window.addEventListener("DOMContentLoaded", function () {
     <?php endif; ?>
 });
 </script>
+
+<!-- ✅ Front-end toast on successful publish (same behavior as the attack variant) -->
+<?php if (!empty($_SESSION['flash_post_success'])): ?>
+<?php unset($_SESSION['flash_post_success']); ?>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const anchor = document.getElementById('postSubmit') || document.getElementById('blogBox');
+  if (!anchor) return;
+
+  const toast = document.createElement('div');
+  toast.textContent = '✅ Post published!';
+  Object.assign(toast.style, {
+    position: 'fixed',
+    zIndex: '9999',
+    background: '#10b981',
+    color: '#fff',
+    padding: '8px 12px',
+    borderRadius: '10px',
+    boxShadow: '0 6px 18px rgba(0,0,0,.15)',
+    fontWeight: '600',
+    fontSize: '14px',
+    opacity: '0',
+    transform: 'translateY(-6px)',
+    transition: 'opacity .28s ease, transform .28s ease'
+  });
+  document.body.appendChild(toast);
+
+  function positionToast() {
+    const r = anchor.getBoundingClientRect();
+    const gap = 10;
+    const rightHasRoom = (r.right + 220 < window.innerWidth);
+    if (rightHasRoom) {
+      toast.style.left = (r.right + gap) + 'px';
+      toast.style.top  = (r.top + window.scrollY - 4) + 'px';
+    } else {
+      toast.style.left = (r.left + window.scrollX + r.width/2 - toast.offsetWidth/2) + 'px';
+      toast.style.top  = (r.top + window.scrollY - toast.offsetHeight - gap) + 'px';
+    }
+  }
+
+  requestAnimationFrame(() => { positionToast(); toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+  ['scroll','resize'].forEach(ev => window.addEventListener(ev, positionToast));
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-6px)';
+    setTimeout(() => toast.remove(), 280);
+  }, 2200);
+});
+</script>
+<?php endif; ?>
 
 </body>
 </html>

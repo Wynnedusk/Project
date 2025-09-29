@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bait — Claim Voucher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:18px}
+    h1{margin:0 0 10px 0}
+    p{color:#374151}
+    .btn{padding:10px 16px;border:1px solid #d1d5db;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .tip{color:#64748b;font-size:13px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <h1>The secret of UCC students passing 100% of their exams 🤫</h1>
+  <p>Limited time. See how to claim in 30 seconds.</p>
+  <button id="claim" class="btn">Claim Now</button>
+
+<script>
+  const btn = document.getElementById('claim');
+  btn.addEventListener('click', ()=>{
+    // Notify the parent panel: user has been lured (bait clicked)
+    try{ window.parent.postMessage({type:'CLICKBAIT_FIRED'}, '*'); }catch(_){}
+
+    // Randomly route to one of two landers (ads/download vs. phishing); weights can be adjusted
+    const r = Math.random();
+    const target = (r < 0.6) ? 'C_lander_ads.html' : 'C_lander_phish.html';
+
+    // Navigate inside the right-hand iframe to load the chosen lander
+    location.href = target;
+  }, false);
+</script>
+</body>
+</html>

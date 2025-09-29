@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phishing — Defense Demo (Block on Submit)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ===== Design tokens aligned to P_panel ===== */
+  :root{
+    --blue:#2563eb; --blue-d:#1d4ed8;
+    --bg:#f4f6fa; --card:#fff; --border:#e5e7eb; --muted:#64748b; --ink:#0f172a;
+    --red:#b91c1c; --redbg:#fee2e2; --green:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:22px;color:var(--ink)}
+  h1{margin:0 0 12px;text-align:center}
+
+  /* topbar = same look & spacing as P_panel */
+  .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin:10px 0 16px}
+  .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+  .badge{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:#fff}
+  .status{font-weight:700}
+  .ok{color:var(--green);font-weight:700}
+  .hint{font-size:13px;color:var(--muted);text-align:center;margin:0 0 10px}
+
+  /* layout & panel cards — harmonized with P_panel */
+  .container{display:flex;gap:20px;max-width:1200px;margin:0 auto;align-items:stretch}
+  .panel{border:1px solid var(--border);background:var(--card);border-radius:12px;flex:1;display:flex;flex-direction:column;position:relative;height:600px;overflow:hidden}
+  .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);background:#f3f4f6}
+  .frameWrap{flex:1;min-height:0;overflow:hidden}
+  .panel iframe{width:100%;height:520px;border:0;border-radius:0 0 12px 12px;background:#fff}
+
+  /* event log — same styling language as P_panel */
+  .log{border:1px solid var(--border);border-radius:10px;background:#fff;max-width:1200px;margin:14px auto 0;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead{background:#f3f4f6}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+  .evt-bad{color:#b91c1c;font-weight:700}
+  .evt-ok{color:#16a34a;font-weight:700}
+  .evt-reuse{color:#0f766e;font-weight:700}
+
+  /* attacker backend table — parity with P_panel */
+  .credsbox{max-width:1200px;margin:14px auto 0;border:1px solid var(--border);background:#fff;border-radius:10px;overflow:hidden}
+  .credshead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:#f8fafc}
+  .credsctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn-mini{padding:4px 8px;border:1px solid var(--border);background:#f8fafc;border-radius:6px;cursor:pointer}
+  .credstablewrap{max-height:260px;overflow:auto}
+  .tr-new{background:#f0fdf4}
+  .muted{color:var(--muted)}
+
+  /* Interstitial warning modal */
+  .ist{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999}
+  .card{width:min(800px,92%);background:#fff;border-radius:16px;border:2px solid #fecaca;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:18px}
+  .title{margin:0 0 10px;color:#7f1d1d;font-weight:800;font-size:22px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .chip{padding:4px 10px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;font-weight:600}
+  .chip.red{background:#fee2e2;border-color:#fecaca;color:#7f1d1d}
+  .note{margin:8px 0 0;color:#334155;line-height:1.55}
+  .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .btn-danger{background:#ef4444;color:#fff;border:1px solid #b91c1c;border-radius:8px;padding:10px 14px}
+  .btn-ghost{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px}
+  .btn-primary-modal{background:var(--blue);color:#fff;border:1px solid var(--blue-d);border-radius:8px;padding:10px 14px}
+
+  /* ===== Teaching area styles (added) ===== */
+  .teach{max-width:1200px;margin:16px auto 0}
+  .teachbox{border:1px solid var(--border);border-radius:10px;background:#fff;margin:10px 0;overflow:hidden}
+  .teachbox>summary{padding:12px 14px;cursor:pointer;font-weight:700;list-style:none}
+  .teachbox>summary::-webkit-details-marker{display:none}
+  .teach .box{padding:12px 14px;border-top:1px solid var(--border);background:#fafafa;font-size:14px;line-height:1.6;color:var(--ink)}
+  .teach pre{margin:0;white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:13px;background:#111827;color:#e5e7eb;padding:12px;border-radius:8px;overflow:auto}
+</style>
+
+<!-- Intro.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+<script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <h1>Phishing Attack — Credential Capture & Reuse(Defense)</h1>
+
+  <div class="topbar">
+    <button class="btn" onclick="doReset()">Reset Demo</button>
+    <button class="btn btn-primary" onclick="startGuide()">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="status">Not phished yet</span></span>
+  </div>
+
+  <p class="hint">Left: the real site. Right: phishing email leading to a fake login.  Even if the page opens, <b>form submission is blocked</b> to protect credentials.</p>
+
+  <div class="container">
+    <div class="panel" id="victimPanel" data-intro="Left: real site — protected.">
+      <h2>Victim (Real site, with defense)</h2>
+      <div class="frameWrap"><iframe id="victimFrame" src="../Secure/login.php" title="Victim"></iframe></div>
+    </div>
+
+    <div class="panel" id="attackerPanel" data-intro="Right: phishing email → interstitial → fake login.">
+      <h2>Attacker (Phishing entry with email-auth labels)</h2>
+      <div class="frameWrap"><iframe id="attackerFrame" src="D_attacker.html" title="Attacker"></iframe></div>
+    </div>
+  </div>
+
+  <!-- Live log -->
+  <div class="log" id="logBox" data-intro="This log records the blocked submission.">
+    <table>
+      <thead><tr><th style="width:120px">Time</th><th style="width:220px">Event</th><th>Details</th></tr></thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Attacker backend (demo parity) -->
+  <div class="credsbox" id="credsBox" data-intro="Attacker backend stays empty or shows a blocked marker.">
+    <div class="credshead">
+      <div><b>Attacker Backend — Captured Credentials (Demo View)</b> <span class="muted">(Data/phished.jsonl)</span></div>
+      <div class="credsctrl">
+        <label><input type="checkbox" id="cbOnlyLatest" checked> Show latest only</label>
+        <label><input type="checkbox" id="cbMaskEmail" checked> Mask email</label>
+        <label><input type="checkbox" id="cbShowPwd"> Show password (teaching)</label>
+        <button class="btn-mini" id="btnReloadCreds">Reload</button>
+      </div>
+    </div>
+    <div class="credstablewrap" id="credsWrap">
+      <table class="credstable" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr>
+            <th style="width:158px;">Time (ISO)</th>
+            <th>Email</th>
+            <th style="width:110px;">Source</th>
+            <th style="width:140px;">IP</th>
+            <th>User agent (short)</th>
+            <th style="width:150px;">Password</th>
+          </tr>
+        </thead>
+        <tbody id="credsBody">
+          <tr><td colspan="6" class="muted">No records — submission will be blocked</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Interstitial -->
+  <div id="ist" class="ist" role="dialog" aria-modal="true">
+    <div class="card" id="istCard">
+      <h3 class="title">Potentially risky site — double-check before you enter credentials</h3>
+      <div class="chips">
+        <div class="chip red" id="chipHost">unknown</div>
+        <div class="chip">Risk: <b>Low</b></div>
+      </div>
+      <p class="note">If you did not initiate this, <b>go back</b>. Even if you continue, this demo will <b>block credential submission</b>.</p>
+      <div class="acts">
+        <button class="btn-ghost"  id="btnReport">Report phish</button>
+        <button class="btn-danger" id="btnBack">Go back</button>
+        <button class="btn-primary-modal" id="btnProceed">Proceed anyway</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- Utilities & state ---------- */
+const statusEl = document.getElementById('statusText');
+const logBody  = document.getElementById('logBody');
+function now(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function addLog(cls,evt,detail){const tr=document.createElement('tr');tr.innerHTML=`<td>${now()}</td><td class="${cls}">${evt}</td><td>${detail||''}</td>`;logBody.appendChild(tr);logBody.parentElement.scrollTop=logBody.parentElement.scrollHeight;}
+
+const attackerFrame=document.getElementById('attackerFrame');
+const victimFrame  =document.getElementById('victimFrame');
+const ist=document.getElementById('ist');
+const chipHost=document.getElementById('chipHost');
+const btnBack=document.getElementById('btnBack');
+const btnProceed=document.getElementById('btnProceed');
+const btnReport=document.getElementById('btnReport');
+
+/* ---------- Interstitial control ---------- */
+let pendingHref='';
+function openWarning(url){
+  pendingHref=url||'';
+  try{ chipHost.textContent=new URL(url, attackerFrame.src).host; } catch(e){ chipHost.textContent=url; }
+  ist.style.display='flex';
+}
+function closeWarning(){ ist.style.display='none'; pendingHref=''; }
+
+btnBack.onclick=()=>{ closeWarning(); statusEl.textContent='Stayed on the current page'; addLog('evt-ok','User cancelled','Stayed on the email page'); };
+btnReport.onclick=()=>{ addLog('evt-bad','Reported suspected phish','User reported the link'); };
+btnProceed.onclick=()=>{
+  if(!pendingHref) return;
+  const next=new URL(pendingHref, attackerFrame.src);
+  next.searchParams.set('def','1'); // child page knows: submission must be blocked
+  attackerFrame.src=next.href;
+  closeWarning();
+  statusEl.textContent='Opened fake login (submission will be blocked)';
+  addLog('evt-reuse','Opened fake login','Chose "Proceed anyway"; submission will be blocked');
+};
+
+/* ---------- Start Guide (fixed Step-2 highlight) ---------- */
+function startGuide(){
+  const tour = introJs().setOptions({
+    nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+    exitOnOverlayClick:false, scrollToElement:true,
+    steps:[
+      { element:'#victimPanel',   intro:'Step 1: First, sign in on the left real site (the victim must be logged in).' },
+      { element:'#attackerPanel', intro:'Step 2: Then, open the phishing email and click the malicious link.' },
+      { element:'#attackerPanel', intro:'Step 3: The defense shows an interstitial warning — confirm the target domain. Proceed for demo.' },
+      { element:'#logBox',        intro:'Step 4: When you try to submit the fake login, the defense blocks it and the log shows “submission blocked”.' },
+      { element:'#credsBox',      intro:'Step 5: Finally, check the attacker backend — it remains empty or only shows a blocked marker.' },
+      { element:'#teachBox',      position:'top', intro:'<b>Step 6</b>: After the demo, check this teaching section for a clear explanation below.' }
+    ]
+  });
+  tour.start();
+}
+
+/* ---------- Messages from attacker iframe ---------- */
+window.addEventListener('message',(e)=>{
+  const d=e.data||{};
+  if(d.type==='NAVIGATE_REQUEST'){ openWarning(d.href||'about:blank'); }
+  if(d.type==='PHISH_SUBMIT_BLOCKED'){
+    statusEl.textContent='Phishing form submission blocked';
+    addLog('evt-bad','Blocked form submission',`Email ${d.email||'(n/a)'} — no password exfiltrated`);
+    try{
+      fetch('D_collect.php', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'email='+encodeURIComponent(d.email||'')+'&blocked=1'
+      }).catch(()=>{});
+    }catch(e){}
+  }
+},false);
+
+/* ---------- Reset ---------- */
+function doReset(){
+  statusEl.textContent = 'Not yet phished';
+  logBody.innerHTML = '';
+  attackerFrame.src = 'D_attacker.html?rnd=' + Date.now();
+
+  fetch('../Secure/login.php?logout=1', { credentials:'include', cache:'no-store' })
+    .catch(()=>{})
+    .finally(()=>{
+      victimFrame.src = '../Secure/login.php?rnd=' + Date.now();
+    });
+
+  if (ist.style.display !== 'none') { ist.style.display = 'none'; }
+}
+
+/* ---------- Minimal creds table loader (parity with P_panel) ---------- */
+(function(){
+  const CREDS_URL='../Data/phished.jsonl';
+  const bodyEl=document.getElementById('credsBody');
+  const wrapEl=document.getElementById('credsWrap');
+  const btnReload=document.getElementById('btnReloadCreds');
+  const cbOnlyLatest=document.getElementById('cbOnlyLatest');
+  const cbMaskEmail=document.getElementById('cbMaskEmail');
+  const cbShowPwd=document.getElementById('cbShowPwd');
+  let autoTimer=null;
+
+  function maskEmail(email){if(!email)return'';return email.replace(/^(.)(.*)(@.*)$/,(_,a,b,c)=>a+'***'+c);}
+  function maskPwd(p){if(!p)return'';if(p.length<=2)return'*'.repeat(p.length);return p[0]+'***'+p[p.length-1];}
+  function shortUA(ua){if(!ua)return'';return ua.length>60?ua.slice(0,60)+'…':ua;}
+  function parseJsonl(text){return text.trim().split('\n').filter(Boolean).map(l=>{try{return JSON.parse(l);}catch(e){return null;}}).filter(Boolean);}
+
+  function render(rows){
+    bodyEl.innerHTML='';
+    if(!rows.length){bodyEl.innerHTML='<tr><td colspan="6" class="muted">No records</td></tr>';return;}
+    if(cbOnlyLatest.checked)rows=[rows[rows.length-1]];
+    rows.forEach((r,i)=>{
+      const tr=document.createElement('tr'); if(i===rows.length-1)tr.classList.add('tr-new');
+      const email=cbMaskEmail.checked?maskEmail(r.email||''):(r.email||'');
+      const pwd=cbShowPwd.checked?(r.password||''):maskPwd(r.password||'');
+      tr.innerHTML=`<td>${(r.ts||'').replace('T',' ').replace('Z','')}</td><td>${email}</td><td>${r.track||''}</td><td>${r.ip||''}</td><td>${shortUA(r.ua||'')}</td><td>${pwd}</td>`;
+      bodyEl.appendChild(tr);
+    });
+    wrapEl.scrollTop=wrapEl.scrollHeight+400;
+  }
+
+  async function load(){try{
+      const res=await fetch(CREDS_URL+'?'+Date.now(),{cache:'no-store'});
+      if(!res.ok)throw 0;
+      const text=await res.text();
+      render(parseJsonl(text));
+    }catch(e){
+      bodyEl.innerHTML='<tr><td colspan="6" class="muted">Failed to read or no data</td></tr>';
+    }}
+  function startAuto(){if(autoTimer)clearInterval(autoTimer);autoTimer=setInterval(load,3000);}
+  window.refreshCredsNow=load;
+  btnReload?.addEventListener('click',load);
+  [cbOnlyLatest,cbMaskEmail,cbShowPwd].forEach(el=>el?.addEventListener('change',load));
+  window.addEventListener('message',(e)=>{if((e.data||{}).type==='CREDENTIALS_CAPTURED')load();});
+  load(); startAuto();
+})();
+</script>
+
+<!-- ===== Teaching area (Defense Walkthrough) ===== -->
+<div id="teachBox" class="teach" aria-label="Phishing Defense Walkthrough">
+    <details class="teachbox">
+    <summary>What just happened?</summary>
+    <div class="box">
+      <p>
+        You clicked the phishing link that looked like a normal “security alert” email.
+        It opened a fake login page asking for your email and password.
+      </p>
+      <p>
+        In this demo the defense first showed an <b>interstitial warning</b>.
+        Even if you continued, when you tried to submit the form, the defense <b>blocked</b> it.
+      </p>
+      <p class="muted">
+        Bottom line: the fake page appeared, but your credentials never left your browser.
+        The attacker’s database stayed empty or only shows a blocked marker.
+      </p>
+    </div>
+  </details>
+
+  <details class="teachbox">
+    <summary>Why did the defense succeed?</summary>
+    <div class="box">
+      <ul class="muted" style="margin:0 0 0 18px">
+        <li><b>Domain confirmation:</b> suspicious links trigger a warning screen.</li>
+        <li><b>Form blocking:</b> the fake login cannot send your credentials.</li>
+        <li><b>Empty backend:</b> the attacker’s capture table remains empty or shows a <b>blocked</b> marker.</li>
+      </ul>
+      <p class="muted" style="margin-top:10px">
+        By interrupting the flow before and during submission, the attacker sees nothing
+        and your account remains safe.
+      </p>
+    </div>
+  </details>
+
+  <details class="teachbox">
+    <summary>Check the attacker’s backend (teaching)</summary>
+    <div class="box">
+      <p>
+        The table above shows what the attacker <i>would</i> have received.
+        In this demo it either stays empty or is marked as <b>blocked</b>.
+      </p>
+      <p class="muted">This visualizes that the phishing submission never succeeded.</p>
+    </div>
+  </details>
+
+  <details class="teachbox">
+    <summary>View key defense idea</summary>
+    <div class="box">
+<pre><code>// Teaching-only pseudo steps:
+// 1) Show interstitial warning before redirect
+openWarning("D_fakelogin.php");
+
+// 2) In defense mode, intercept submit and notify parent (no password leaves the browser)
+if (DEFENSE_ON) {
+  blockSubmit();           // prevent real submission
+  notifyParent('PHISH_SUBMIT_BLOCKED', { email });
+}</code></pre>
+      <p class="muted">
+        Instead of letting credentials flow to the attacker,
+        the system interrupts and records the attempt for teaching.
+        In production, pair this with MFA and suspicious-login alerts.
+      </p>
+    </div>
+  </details>
+</div>
+
+</body>
+</html>

@@ -1,46 +1,235 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>CSRF Attack Simulation</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 30px; }
-        .container { display: flex; gap: 30px; justify-content: center; }
-        .panel {
-            border: 1px solid #ccc;
-            padding: 10px;
-            width: 600px;
-            height: 600px;
-        }
-        .panel h2 {
-            margin-top: 0;
-        }
-        iframe {
-            width: 100%;
-            height: 90%;
-            border: none;
-        }
-        .reload-btn {
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>CSRF Blog Attack Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --blue:#2563eb; --blue-d:#1d4ed8;
+      --bg:#f4f6fa; --card:#fff; --border:#e5e7eb; --muted:#64748b; --ink:#0f172a;
+      --ok:#16a34a; --bad:#b91c1c;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      margin:0; padding:30px; background:var(--bg); color:var(--ink); text-align:center;
+    }
+    h1{margin:0 0 16px}
+    .topbar{display:flex;gap:12px;justify-content:center;align-items:center;margin-bottom:18px}
+    .btn{padding:8px 12px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue-d);font-weight:600}
+    .badge{padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-weight:600}
+    .s-ok{color:var(--ok)}
+    .s-bad{color:var(--bad)}
+    .container{
+  display:flex;
+  gap:30px;
+  justify-content:center;
+  align-items:flex-start;
+  width:100%;
+  max-width:1600px;   /* 宽屏也能铺开 */
+  margin:0 auto;
+}
+.panel{
+  border:1px solid var(--border); background:var(--card);
+  padding:10px;
+  flex:1;               /* 自动分配宽度 */
+  min-width:0;          /* 防止溢出 */
+  height:600px;
+  border-radius:12px;
+  display:flex; flex-direction:column;
+}
+
+    .panel h2{margin:0 0 8px; font-size:18px}
+    .frameWrap{flex:1; min-height:0; overflow:auto}
+    .frameWrap>iframe{width:100%; height:100%; border:none; border-radius:6px; background:#fff}
+    .reload-btn{margin-top:10px}
+
+    /* Teaching prompts (independent) */
+    .teach{max-width:1230px;margin:20px auto;display:flex;flex-direction:column;gap:14px}
+    .teachbox{
+      border:1px solid var(--border); border-radius:10px; background:#fff; text-align:left;
+      overflow:hidden;
+    }
+    .teachbox>summary{
+      padding:10px 12px; list-style:none; font-weight:700; cursor:pointer; background:#f8fafc;
+      border-bottom:1px solid var(--border);
+    }
+    .teachbox[open]>summary{background:#eef2ff}
+    .teachbox .box{padding:12px}
+    code, pre{background:#0f172a; color:#e5e7eb; border-radius:8px; padding:10px; display:block; overflow:auto}
+    .muted{color:var(--muted); font-size:13px}
+    @media (max-width: 980px){
+  .container{flex-direction:column}
+  .panel{width:100%; height:auto}
+}
+
+  </style>
+
+  <!-- Intro.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
 </head>
 <body>
-    <h1>CSRF Blog Attack Demo</h1>
-    <div class="container">
-        <!-- Victim blog -->
-        <div class="panel">
-            <h2>🧑‍💻 Blog (Victim)</h2>
-            <iframe id="blogFrame" src="blog.php?step=1"></iframe>
-            <button class="reload-btn" onclick="document.getElementById('blogFrame').src='blog.php'">Reload Blog</button>
-        </div>
+  <h1>CSRF Blog Attack Demo</h1>
 
-        <!-- Attacker -->
-        <div class="panel">
-            <h2>💣 Attacker</h2>
-            <iframe id="attackerFrame" src="attacker.html"></iframe>
-            <button class="reload-btn" onclick="document.getElementById('attackerFrame').src='attacker.html'">Reload Attacker</button>
-        </div>
+  <div class="topbar">
+    <button class="btn" onclick="doReset()">Reset Demo</button>
+    <button class="btn btn-primary" onclick="startGuide()">Start Guide</button>
+    <span class="badge">Status: <span id="statusText" class="s-ok">Idle</span></span>
+  </div>
+
+  <div class="container">
+    <!-- Victim blog -->
+    <div class="panel" id="victimPanel">
+      <h2>Blog (Victim)</h2>
+      <div class="frameWrap">
+        <iframe id="blogFrame" src="blog.php?step=1" title="Victim Blog"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadVictim()">Reload Blog</button>
     </div>
+
+    <!-- Attacker -->
+    <div class="panel" id="attackerPanel">
+      <h2>Attacker Attempt</h2>
+      <div class="frameWrap">
+        <iframe id="attackerFrame" src="attacker.html" title="Attacker"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadAttacker()">Reload Attacker</button>
+    </div>
+  </div>
+
+  <!-- Teaching prompts -->
+
+  <div class="teach" id="teachSection">
+    <details class="teachbox">
+      <summary>What just happened?</summary>
+      <div class="box">
+        <p>After clicking <b>Like</b> in the attacker panel, a hidden cross-site request was sent using your session cookie. The blog accepted it and auto-created a post. Status changes from Idle → Attacked when the blog iframe reloads.</p>
+        <p class="muted">Signal: user click → victim iframe reload → status flip.</p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>Why did the attack succeed?</summary>
+      <div class="box">
+        <ul>
+          <li>No CSRF token validation on the post-creation endpoint.</li>
+          <li>Browser auto-attached the session cookie (<code>credentials: "include"</code>).</li>
+          <li>No Origin/Referer checks; SameSite not enforced.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>View vulnerable handler snippet</summary>
+      <div class="box">
+<pre><code>// blog.php (simplified)
+if (!empty($_POST['content'])) {
+  // No CSRF token check
+  // No Origin/Referer validation
+  save_post($_SESSION['user_id'], $_POST['content']);
+}</code></pre>
+        <p class="muted">This endpoint trusts cookies blindly — classic CSRF vulnerability.</p>
+      </div>
+    </details>
+    <!-- Attacker code (with simple explanation) -->
+    <details class="teachbox">
+      <summary>View attacker code</summary>
+      <div class="box">
+  <pre><code>// attacker_defense.html (what the attacker tries to do)
+  function launchAttack(){
+    const fd = new FormData();
+    fd.append('content', 'CSRF attack attempt (no token)'); // no secret token added
+    fetch('post.php', {
+      method: 'POST',
+      credentials: 'include', // sends your cookies automatically
+      body: fd                 // but still missing the secret token
+    }).then(async res => {
+      const txt = await res.text().catch(()=>'');
+      alert(res.status + ' — ' + (res.ok ? 'OK' : ('Blocked: ' + txt)));
+    }).catch(e => alert('Fetch error: ' + e));
+  }</code></pre>
+  
+        <ul style="margin:10px 0 0 18px;">
+          <li><b>It forges a submit</b>: the attacker builds a POST that looks like “you clicked”.</li>
+          <li><b>Cookies ride along</b>: the browser will attach your cookies when <code>credentials:'include'</code> is set, so the request seems authenticated.</li>
+          <li><b>But no secret token</b>: the attacker cannot read or inject the victim page’s hidden <code>csrf_token</code>.</li>
+          <li><b>Server refuses</b>: the token check fails, the server returns 403, and the blog remains unchanged.</li>
+        </ul>
+  
+        <p class="muted" style="margin-top:8px;">
+          Note: the attacker can send cookies, but cookies alone are not sufficient — the server requires the session token that only the genuine page can embed and send.
+        </p>
+      </details>
+      </div>
+ 
+<script>
+  const blogFrame = document.getElementById('blogFrame');
+  const attackerFrame = document.getElementById('attackerFrame');
+  const statusEl = document.getElementById('statusText');
+
+  function setStatus(attacked){
+    if(attacked){
+      statusEl.textContent = 'Attacked';
+      statusEl.classList.remove('s-ok'); statusEl.classList.add('s-bad');
+    }else{
+      statusEl.textContent = 'Idle';
+      statusEl.classList.remove('s-bad'); statusEl.classList.add('s-ok');
+    }
+  }
+
+  let attackPending = false;
+
+  attackerFrame.addEventListener('load', () => {
+    try{
+      const doc = attackerFrame.contentDocument || attackerFrame.contentWindow.document;
+      const likeBtn = doc.getElementById('likeBtn');
+      if (likeBtn) likeBtn.addEventListener('click', ()=>{ attackPending = true; });
+    }catch(e){}
+  });
+
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.type === 'ATTACK_FIRED') attackPending = true;
+  }, false);
+
+  blogFrame.addEventListener('load', () => {
+    if (attackPending) {
+      setStatus(true);
+      attackPending = false;
+    }
+  });
+
+  function reloadVictim(){
+    const u=new URL(blogFrame.src,location.href); u.searchParams.set('_v',Date.now()); blogFrame.src=u.toString();
+  }
+  function reloadAttacker(){
+    const u=new URL(attackerFrame.src,location.href); u.searchParams.set('_v',Date.now()); attackerFrame.src=u.toString();
+  }
+  function doReset(){
+    attackPending = false;
+    setStatus(false);
+    reloadVictim(); reloadAttacker();
+  }
+
+  function startGuide(){
+    introJs().setOptions({
+      nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+      exitOnOverlayClick:false, scrollToElement:true,
+      steps:[
+        {element:'#victimPanel',   intro:'Step 1: Simulate log in in the left panel.'},
+        {element:'#attackerPanel', intro:'Step 2: In the attacker panel (right), click Like to trigger the attack.'},
+        {element:'#victimPanel',   intro:'Step 3: Watch the blog auto-post a new entry. Status flips to Attacked.'},
+        /* ⬇️ 新增的第四步：高亮教学提示区域并提示文案 */
+        {element:'#teachSection',  intro:'Step 4: After the demo, check this teaching section for a clear explanatios below.'}
+      ]
+    }).start();
+  }
+
+  setStatus(false);
+</script>
 </body>
 </html>

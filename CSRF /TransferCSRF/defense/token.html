@@ -8,16 +8,29 @@
   <h2>Loading scholarship verification, please wait...</h2>
 
   <script>
-    // Simulates an attacker's forged POST request without adding a CSRF token
+    // Simulate an attacker's forged POST request without adding a CSRF token
     fetch("../defense/secure-pay.php", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      credentials: "include", //  A cookie is automatically attached (auth/user_token)
-      body: "money=1000"      //  Missing csrf_token triggers server defense
+      credentials: "include", // A cookie is automatically attached (auth/user_token)
+      body: "money=1000"      // Missing csrf_token triggers server defense
     }).then(res => res.text()).then(msg => {
-      console.log("Server response:", msg); 
+      console.log("Server response:", msg);
+      
+      // Trigger defense success: Update status dynamically
+      const statusEl = parent.document.getElementById('statusText');  // Access parent document status
+      const logArea = parent.document.querySelector("#victimPanel .frameWrap #logs");  // Access parent document logs
+
+      // Update status to protected
+      statusEl.textContent = 'Protected';  // Change to Protected
+      statusEl.classList.remove('s-ok');
+      statusEl.classList.add('s-ok');     // Update color to green for Protected (Change to green)
+
+      // Log the defense action on the victim's panel dynamically
+      const logMessage = `<p> CSRF Token validated: 1000 Euros not transferred to attacker@evil.com | Time: ${new Date().toLocaleString()}</p>`;
+      logArea.innerHTML += logMessage; // Append log message to the logs
     });
   </script>
 

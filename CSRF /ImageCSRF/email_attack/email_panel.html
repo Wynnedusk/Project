@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GET CSRF Demo — Change Email via &lt;img&gt;</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Layout */
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding:30px}
+    h1{text-align:center;margin-bottom:18px}
+    .topbar{display:flex;justify-content:center;gap:12px;margin-bottom:14px;align-items:center}
+    .btn{padding:8px 12px;border:1px solid #ccc;background:#f7f7f7;border-radius:8px;cursor:pointer}
+    .btn-guide{
+      background:#2563eb;color:#fff;border-color:#1d4ed8;font-weight:600;
+      box-shadow:0 0 8px rgba(37,99,235,.6);transition:background .2s,transform .2s;
+    }
+    .btn-guide:hover{background:#1d4ed8;transform:scale(1.05)}
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(30%)}
+    .status{font-size:14px;color:#555}.status b{color:#b91c1c}
+    .container{display:flex;gap:30px;justify-content:center}
+    .panel{border:1px solid #e5e7eb;padding:10px;width:600px;height:600px;border-radius:12px;position:relative;display:flex;flex-direction:column;min-width:0;background:#fff}
+    .panel h2{margin:0 0 8px 0;font-size:18px}
+    .frameWrap{flex:1;min-height:0;overflow:hidden;display:flex}
+    .frameWrap>iframe{width:100%;height:100%;display:block;border:none;border-radius:6px;background:#fff;touch-action:pan-y}
+    .reload-btn{margin-top:10px}
+
+    /* Teaching section (collapsible like the reference) */
+    .teach{max-width:1230px;margin:20px auto;display:flex;flex-direction:column;gap:14px}
+    .teachbox{
+      border:1px solid #e5e7eb; border-radius:10px; background:#fff; text-align:left;
+      overflow:hidden;
+    }
+    .teachbox>summary{
+      padding:10px 12px; list-style:none; font-weight:700; cursor:pointer; background:#f8fafc;
+      border-bottom:1px solid #e5e7eb;
+    }
+    .teachbox[open]>summary{background:#eef2ff}
+    .teachbox .box{padding:12px}
+    .muted{color:#64748b; font-size:13px}
+    code, pre{background:#0f172a; color:#e5e7eb; border-radius:8px; padding:10px; display:block; overflow:auto; margin:8px 0}
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js/minified/introjs.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/intro.js/minified/intro.min.js"></script>
+</head>
+<body>
+  <h1>GET CSRF Demo — Change Email via &lt;img&gt;</h1>
+
+  <div class="topbar">
+    <button id="btnSimLogin" class="btn" onclick="simulateLogin()">Simulate Login</button>
+    <button class="btn" onclick="resetProfile()">Reset Profile</button>
+    <button class="btn btn-guide" onclick="startGuide()">Start Guide</button>
+    <span class="status">Attack status: <b id="attackStatus">Idle</b></span>
+  </div>
+
+  <div class="container">
+    <div class="panel" id="victimPanel">
+      <h2>Profile (Victim)</h2>
+      <div class="frameWrap">
+        <iframe id="victimFrame" src="email_profile.php?step=1" title="Victim Profile" scrolling="auto"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadVictim()">Reload Profile</button>
+    </div>
+
+    <div class="panel" id="attackerPanel">
+      <h2>Attacker Offer</h2>
+      <div class="frameWrap">
+        <iframe id="attackerFrame" src="email_attacker.html" title="Attacker Page" scrolling="auto"></iframe>
+      </div>
+      <button class="reload-btn btn" onclick="reloadAttacker()">Reload Attacker</button>
+    </div>
+  </div>
+
+  <!-- Teaching prompts (collapsible; first one not open by default) -->
+  <div class="teach" id="teachSection">
+    <details class="teachbox">
+      <summary>What just happened?</summary>
+      <div class="box">
+        <p><b>You scrolled to the 3rd photo in the attacker panel.</b> That photo secretly loaded what looked like an image, but the URL was actually a command to this site:
+          <code>email_image.php?new=attacker@evil.com</code>.
+          Because your browser was logged in, the request used your session cookie automatically.</p>
+        <p>When the victim profile reloaded, the email changed to the attacker’s value and the status switched from <b>Idle</b> to <b>Attacked</b>.</p>
+        <p class="muted">Signal flow: scroll → hidden image loads → victim iframe reload → status flips.</p>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>Why did the attack succeed?</summary>
+      <div class="box">
+        <p>The server trusted a GET request to perform an important action. That means an attacker could disguise a command as an image. Here is the simplified logic of the attacker’s code:</p>
+<pre><code>// When the 3rd picture is visible:
+const img = new Image();
+img.src = 'email_image.php?new=attacker%40evil.com';
+// Browser thinks it is just an image,
+// but the server treats it as a real request.</code></pre>
+        <p>Because the browser automatically attached your session cookie, the server believed this was a valid request from you. No CSRF token or origin checks were required, so the change succeeded.</p>
+        <ul>
+          <li><b>State change via GET:</b> the server allowed account changes with a simple GET request.</li>
+          <li><b>No CSRF token:</b> there was no secret token to confirm the request came from you.</li>
+          <li><b>Automatic cookies:</b> the browser added your session cookie without asking you.</li>
+          <li><b>No origin checks:</b> the server did not verify that the request actually came from this site.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="teachbox">
+      <summary>View vulnerable server code</summary>
+      <div class="box">
+  <pre><code>&lt;// Teaching attacker: lazy-load + image GET trigger (for demo)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          console.log('[demo] image entered viewport, launching GET attack at', Date.now());
+          const img = new Image();
+          // cache-buster t= to show unique request in Network
+          img.src = 'email_image.php?new=attacker@evil.com&t=' + Date.now();
+          // append to DOM only for visibility (optional)
+          // document.body.appendChild(img);
+        }
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll('.gallery img').forEach(el => observer.observe(el));&gt;</code></pre>
+        <p class="muted">This snippet intentionally demonstrates the unsafe pattern: state-changing logic placed behind a GET endpoint that an attacker can trigger via an image load.</p>
+      </div>
+    </details>
+  </div>
+
+
+  <script>
+    // Frame refs and status UI
+    const victim   = document.getElementById('victimFrame');
+    const attacker = document.getElementById('attackerFrame');
+    const statusEl = document.getElementById('attackStatus');
+    const btnLogin = document.getElementById('btnSimLogin');
+
+    let handledAttackOnce = false;
+    let pollTimer = null;
+
+    function checkVictimState(){
+      return fetch('email_profile.php?state=1&v='+Date.now(),{cache:'no-store'})
+        .then(r=>r.ok?r.json():Promise.reject())
+        .then(s=>{
+          statusEl.textContent = s.attacked ? 'Attacked' : 'Idle';
+          btnLogin.disabled = !!s.loggedIn;
+          return s;
+        })
+        .catch(()=>{});
+    }
+
+    function simulateLogin(){
+      if (btnLogin.disabled) return;
+      btnLogin.disabled = true;
+      victim.src = 'email_profile.php?action=login';
+      setTimeout(()=>{
+        victim.src = 'email_profile.php?step=2';
+        checkVictimState();
+        try{ attacker.contentWindow?.postMessage({type:'LOGIN_DONE'}, '*'); }catch(e){}
+      }, 500);
+    }
+
+    function resetProfile(){
+      handledAttackOnce = false;
+      victim.src = 'email_profile.php?action=reset';
+      statusEl.textContent = 'Idle';
+      btnLogin.disabled = false;
+      const u = new URL(attacker.src, location.href);
+      u.searchParams.set('_v', Date.now());
+      attacker.src = u.toString();
+    }
+
+    function reloadVictim(){
+      const u = new URL(victim.src, location.href);
+      u.searchParams.set('_v', Date.now());
+      victim.src = u.toString();
+      setTimeout(checkVictimState, 600);
+    }
+
+    function reloadAttacker(){
+      const u = new URL(attacker.src, location.href);
+      u.searchParams.set('_v', Date.now());
+      attacker.src = u.toString();
+    }
+
+    // Cross-frame messaging: attacker → parent
+    window.addEventListener('message',(e)=>{
+      const d = e.data || {};
+
+      // 1) Attacker fired: start short polling until server reports attacked
+      if (d.type === 'ATTACK_FIRED' && !handledAttackOnce){
+        if (pollTimer) clearInterval(pollTimer);
+        let ticks = 0;
+        pollTimer = setInterval(()=>{
+          checkVictimState().then(s=>{
+            if (s && s.attacked){
+              clearInterval(pollTimer); pollTimer=null;
+              handledAttackOnce = true;
+              reloadVictim();
+              setTimeout(checkVictimState, 700);
+            }
+          });
+          if (++ticks > 20){ clearInterval(pollTimer); pollTimer=null; } // up to ~6s
+        }, 300);
+        return;
+      }
+
+      // 2) Attacker may directly report status
+      if (d.type === 'ATTACK_STATUS'){
+        const v = String(d.value || '').toLowerCase();
+        statusEl.textContent = (v === 'attacked') ? 'Attacked' : 'Idle';
+
+        if (e.source === victim.contentWindow) return;
+
+        if (v === 'attacked' && !handledAttackOnce){
+          handledAttackOnce = true;
+          if (pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+          reloadVictim();
+          setTimeout(checkVictimState, 700);
+          try{ victim.contentWindow?.focus(); }catch(e){}
+        }
+      }
+    }, false);
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      checkVictimState();
+      let n=0; const t=setInterval(()=>{ checkVictimState(); if(++n>10) clearInterval(t); },200);
+    });
+
+    function startGuide(){
+      introJs().setOptions({
+        nextLabel:'Next', prevLabel:'Back', doneLabel:'Done',
+        exitOnOverlayClick:false, scrollToElement:true,
+        steps:[
+          {element:'#btnSimLogin', intro:'Step 1: Click "Simulate Login" to sign in the victim account.', position:'bottom'},
+          {element:'#attackerPanel', intro:'Step 2: Scroll the right panel to the third image. It silently fires a GET request via &lt;img&gt;.'},
+          {element:'#victimPanel', intro:'Step 3: Watch the left profile update: email changes and status becomes "Attacked".'},
+          {element:'#teachSection', intro:'Step 4: After the demo, check this teaching section for a clear explanatios below.'}
+        ]
+      }).start();
+    }
+  </script>
+</body>
+</html>
